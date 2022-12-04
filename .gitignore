@@ -1,6 +1,14 @@
 # Logs
 logs
 *.log
+.idea/
+.dart_tool/
+android/
+ios/
+build/
+linux/
+macos/
+idea.zip
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

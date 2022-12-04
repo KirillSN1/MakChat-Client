@@ -1,2 +1,2 @@
-# matcha
+# matcha/client
 Makeevka True Chat
