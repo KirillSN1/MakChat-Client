@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matcha/env.dart';
+import 'package:matcha/services/Locator.dart';
 import 'package:matcha/services/auth/auth.dart';
-import 'package:matcha/models/user.dart';
-import 'package:matcha/routes/args/main_args.dart';
+import 'package:matcha/models/user/user.dart';
 import 'package:matcha/services/repositories/auth/auth_errors.dart';
+import 'package:matcha/services/repositories/auth/auth_info.dart';
+import 'package:matcha/services/repositories/errors.dart';
 import '../routes/app_route_enum.dart';
 
 class LoginView extends StatefulWidget{
@@ -17,20 +19,31 @@ class LoginView extends StatefulWidget{
 
 class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
+  final _loginTextController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
   String? _login;
   String? _password;
   
   bool _isLoading = false;
+  
 
   @override
   initState(){
     super.initState();
+    Auth.lastUser.then((value) => _setLogin(value?.login));
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown
     ]);
   }
-
+  _setLogin(String? login){
+    if(login == null || login.isEmpty) return;
+    setState(() {
+      _login = login;
+      _loginTextController.text = _login!;
+      _passwordFocusNode.requestFocus();
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,6 +73,7 @@ class _LoginViewState extends State<LoginView> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: TextFormField(
+                        controller: _loginTextController,
                         autofocus: true,
                         decoration: InputDecoration(
                           border: const OutlineInputBorder().copyWith(
@@ -78,6 +92,7 @@ class _LoginViewState extends State<LoginView> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: TextFormField(
+                        focusNode: _passwordFocusNode,
                         autofocus: true,
                         decoration: InputDecoration(
                           border: const OutlineInputBorder().copyWith(
@@ -115,11 +130,6 @@ class _LoginViewState extends State<LoginView> {
                         label: const Text('Вход'),
                       ),
                     )
-                    // ElevatedButton(
-                    //   key: ,
-                    //   onPressed: ()=>_onLogin(context),
-                    //   child: const Text("Вход"),
-                    // )
                   ],
                 ),
               ),
@@ -133,45 +143,50 @@ class _LoginViewState extends State<LoginView> {
     setState(() {
       _isLoading = true;
     });
-    await _signInOrUp(context);
+    await _signInOrUp();
     setState(() {
       _isLoading = false;
     });
   }
-  _signInOrUp(context) async {
-    
+  _signInOrUp() async {
     final form = _formKey.currentState;
     if(form!.validate()) {
       form.save();
       final login = _login ?? "";
       final password = _password ?? "";
-      try {
-        final result = await Auth.signUp(login,password);
-        switch(result){
-          case SignUpResult.success:break;
-          case SignUpResult.alreadyExists:{
-            final signResult = await Auth.signIn(login, password);
-            if(signResult == SignInResult.incorrectPassword) {
-              return _showSnackMessage(context, "Логин или пароль неверный");
-            }
-          }
-        }
-        _showSnackMessage(context, "Здравствуйте, $login");
-        _onLogined(context,User(login: login));
+      try{
+        final result = await Auth.signIn(login,password);
+        return _onLogined(result);
+      } on IncorrectPasswordOrTokenError{
+        return _showSnackMessage(context, "Логин или пароль неверный.");
+      } on UserNotExistsError{
+        return _register(login, password);
+      } on UnhandledRepositoryError catch(error){
+        _showSnackMessage(context, "Ошибка подключения:${error.message}");
       }
-      on AuthError catch (error){
-        _showSnackMessage(context, error.message);
+      catch(error){
+        _showSnackMessage(context, "Ошибка${Env.debug?":$error":""}.");
       }
     }
   }
-  void _onLogined(BuildContext context, User user) {
-    
-    Navigator.of(context).push(
-      AppRoute.main.route.build(null, MainArgs(user))
-    );
+  _register(String login, String password) async{
+    try{
+      final result = await Auth.signUp(login,password);
+      _onLogined(result);
+      return;
+    } on UserAlreadyExistsError{
+      return _showSnackMessage(context, "Пользователь уже существует.");
+    } on UnhandledRepositoryError catch(error){
+      _showSnackMessage(context, "Ошибка подключения:${error.message}");
+    }
+    catch(error){
+      _showSnackMessage(context, "Ошибка${Env.debug?":$error":""}.");
+    }
+  }
+  void _onLogined(AuthInfo authInfo) {
+    Navigator.of(context).push(AppRoute.main.route.build(authInfo));
   }
   void _showSnackMessage(context,String text){
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-  }
-  
+  } 
 }

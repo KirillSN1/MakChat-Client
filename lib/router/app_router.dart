@@ -10,9 +10,9 @@ class AppRouter{
     try{
       String name = settings.name ?? AppRoute.notFound.name;
       var routeData = onGenerateRoute(AppRoute.byName(name), settings);
-      return routeData.route.build(settings, null);
+      return routeData.route.build(null, settings: settings);
     } catch(e){
-      return const NotFoundRoute().build(settings, null);
+      return const NotFoundRoute().build(null, settings: settings);
     }
   }
   static Route Function(RouteSettings s) getHandler({ required OnGenerateRoute onGenerateRoute }){

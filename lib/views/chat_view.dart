@@ -1,14 +1,15 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:matcha/models/chat_message.dart';
+import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
+import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
+import 'package:matcha/chat/ws_messages/client/ws_chat_request/ws_chat_request.dart';
+import 'package:matcha/chat/ws_messages/server/ws_chat_message/ws_chat_message.dart';
+import 'package:matcha/env.dart';
+import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
+import 'package:matcha/models/messages_groups_list.dart';
 import 'package:matcha/routes/args/chat_args.dart';
-import 'package:matcha/services/auth/auth.dart';
-import 'package:matcha/services/connector.dart';
-import 'package:matcha/services/json_socket.dart';
-import 'package:matcha/views/components/chat/chat_message_view.dart';
+import 'package:matcha/views/components/chat/chat_text_field.dart';
+import 'package:matcha/views/components/chat/messages_groups_view.dart';
 import 'package:matcha/views/components/custom_back_button.dart';
 
 
@@ -18,23 +19,26 @@ enum ChatViewState{
 
 
 class ChatView extends StatefulWidget{
-  final ChatArgs? args;
+  final ChatArgs args;
 
-  const ChatView({super.key, this.args });
+  ChatView({super.key, required this.args }){
+    if(args == null) throw ArgumentError(args,"args");
+  }
 
   @override
   State<ChatView> createState() => _ChatViewState();
 }
 
 class _ChatViewState extends State<ChatView> {
-  JsonSocket? _soket;
-  
+  // JsonSocket? _socket;
+  final WSChatClient _client = WSChatClient();
   late ChatViewState _state;
-  
-  final List<ChatMessage> _messages = [];
-  
+  // final List<ChatMessage> _messages = [];
+  final MessagesGrouper _messagesGrouper = MessagesGrouper();
   final _inputContriller = TextEditingController();
-
+  final ScrollController _scrollController = ScrollController(keepScrollOffset: true);
+  String errorMessage = "";
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +50,7 @@ class _ChatViewState extends State<ChatView> {
             Padding(
               padding: const EdgeInsets.only(right: 10),
               child: Hero(
-                tag: "avatar_${widget.args==null?"0":widget.args!.chat.id.toString()}",
+                tag: "avatar_${(widget.args.authInfo.user.id).toString()}",
                 child: const CircleAvatar(
                   radius: 23,
                   backgroundColor: Colors.blue,
@@ -54,26 +58,33 @@ class _ChatViewState extends State<ChatView> {
                 ),
               ),
             ),
-            widget.args==null?const Text("Unknown")
-            :Text(widget.args!.chat.name)
+            Text(widget.args.chat.name)
           ],
         )
       ),
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          if(_state == ChatViewState.loaded)
           Expanded(
             child: ListView(
-              children: [
-                for(final message in _messages) 
-                ChatMessageView(message: message)
-              ],
+              controller: _scrollController,
+              children:[
+                for(final messageGroup in _messagesGrouper.groups.entries)
+                  MessagesGroupView(
+                    authInfo: widget.args.authInfo, 
+                    messages: messageGroup.value,
+                  )
+              ]
             ),
           ),
-          Row(
-            children: [
-              Expanded(child: TextField(controller: _inputContriller, autofocus: true, onSubmitted: (value)=>_sendInputData())),
-              IconButton(onPressed: _sendInputData, icon: const Icon(Icons.send_rounded))
-            ],
+          if(_state == ChatViewState.loading)
+            const Center(child: LinearProgressIndicator()),
+          if(_state == ChatViewState.errored)
+            Expanded(child: Center(child: Text(errorMessage))),
+          ChatTextField(
+            controller: _inputContriller,
+            onSend: (_)=>_sendInputData(),
           )
         ],
       ),
@@ -81,63 +92,95 @@ class _ChatViewState extends State<ChatView> {
   }
 
   @override
-  initState(){
+  initState() {
     _state = ChatViewState.loading;
     super.initState();
-    connect((Map<String,dynamic>? data){
-      if(data?["message"]!=null) {
-        setState(() {
-          _messages.add(ChatMessage(data?["message"],DateTime.now(),1,MessgaeStatus.readed));
-        });
+    _connect();
+  }
+  Future _connect() async {
+    final chatId = widget.args.chat.id;
+    _client.onConnect.addListener(_onConnect);
+    _client.onMessage.addListener(_onGiveMessage);
+    _client.onDisconnect.addListener(_onDisconnect);
+    await _client.connect(chatId, widget.args.authInfo.token);
+    setState(() { _state = ChatViewState.loaded; });
+  }
+  void _onConnect(_) {
+    setState(() { _state = ChatViewState.loaded; });
+  }
+  void _onDisconnect(DisconnectReson? reson){
+    if(reson == null || reson.code == DisconnectReson.normal) return;
+    errorMessage = "Ошибка:";
+    switch(reson.code){
+      case(DisconnectReson.authError):
+        errorMessage += "вы не авторизованы.";
+        break;
+      case(DisconnectReson.argumentsError):
+        errorMessage += "неизвестный чат.";
+        break;
+      default:
+        errorMessage += "${reson.code}";
+        if(Env.debug) errorMessage += reson.message;
+        break;
+    }
+    setState(() { _state = ChatViewState.errored; });
+  }
+  _onGiveMessage(WSChatMessage? message){
+    if(message == null) return;
+    setState(() {
+      final messageDateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
+      final groupKey = MessagesGroupKey.from(message.appUserId, messageDateTime);
+      final messageGroup = _messagesGrouper.groups[groupKey];
+      final chatMessageIndex = messageGroup==null?-1:messageGroup.indexWhere(
+        (m)=>m.id == message.id ||
+          m.id == 0 &&
+          m.authorId == message.appUserId &&
+          m.text == message.text &&
+          m.dateTime.millisecondsSinceEpoch == message.created_at);
+      if(messageGroup != null && chatMessageIndex >= 0){
+        final chatMessage = messageGroup[chatMessageIndex];
+        if(chatMessage.id == message.id){
+          chatMessage.text = message.text;
+          chatMessage.changed = message.changed;
+          chatMessage.dateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
+        }
+        if(chatMessage.id == ChatMessage.defaultId) chatMessage.id = message.id;
+        chatMessage.status = MessageStatus.byValue(message.status,MessageStatus.sended);
       }
-    }).then((value){
-      setState(() {
-        _state = ChatViewState.loaded;
-        _soket = value;
-      });
+      else{
+        _messagesGrouper.add(ChatMessage(
+          message.id,
+          message.text,
+          DateTime.fromMillisecondsSinceEpoch(message.updated_at),
+          message.appUserId,
+          MessageStatus.byValue(message.status,MessageStatus.sended),
+          message.changed
+        ));
+      }
     });
   }
-
   @override
   dispose(){
-    disconnect(true);
+    _client.disconnect();
     super.dispose();
   }
-
-  Future<JsonSocket> connect(void Function(Map<String, dynamic>?) listener) async {
-    if(_soket != null) throw Exception("already connected");
-    final socket = await JsonSocket.connect();
-    socket.onData.addListener(listener);
-    socket.listen();
-    socket.send({ "type":"Auth", "token":await Auth.token });
-    return socket;
-  }
-  disconnect([bool onDispose = true]){
-    if(_soket == null) throw Exception("_soket was null");
-    _soket!.close();
-    if(!onDispose) {
-      setState(() {
-        _soket = null;
-      });
-    } else {
-      _soket = null;
-    }
-  }
-
   void _sendInputData() {
-    if(_soket == null) {
-      setState(() {
-        _state = ChatViewState.errored;
-      });
-      throw Exception("Connection Error (onsend)!");
-    }
     final text = _inputContriller.value.text;
-    _soket!.send({ "text":text });
+    final message = ChatMessage.create(text, widget.args.authInfo.user.id);
+    _client.send(
+      WSChatRequest(
+        text: text, 
+        dateTime: message.dateTime.millisecondsSinceEpoch
+      ),
+      true
+    );
     setState(() {
-      _messages.add(ChatMessage(text, DateTime.now(), 0, MessgaeStatus.sended));
+      _messagesGrouper.add(message);
     });
-  }
-  _showSnackMessage(context,String text){
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.ease);
+    });
   }
 }

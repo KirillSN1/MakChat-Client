@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:matcha/low/event.dart';
 import 'package:matcha/services/connector.dart';
@@ -15,7 +16,7 @@ class JsonSocket{
     final channel = await Connector.connect();
     return JsonSocket(channel);
   }
-  send(Map<String, dynamic> json){
+  void send(Map<String, dynamic> json){
     _channel.sink.add(jsonEncode(json));
   }
   StreamSubscription listen([bool cancelOnError = false]){
@@ -26,10 +27,11 @@ class JsonSocket{
     );
   }
   Future close([int? closeCode, String? closeReason])=>_channel.sink.close(closeCode, closeReason);
-  get closeCode => _channel.closeCode;
-  get closeReason => _channel.closeReason;
-  get protocol => _channel.protocol;
+  int? get closeCode => _channel.closeCode;
+  String? get closeReason => _channel.closeReason;
+  String? get protocol => _channel.protocol;
   _onData(dynamic event){
+    log(event.toString());
     if(event is! String) return;
     final message  = jsonDecode(event);
     onData.invoke(message);

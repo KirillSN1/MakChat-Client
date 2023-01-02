@@ -1,23 +1,31 @@
-import 'dart:developer';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:matcha/routes/args/main_args.dart';
+import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/views/components/chat_list/chat_card/chat_card.dart';
+import 'package:matcha/views/components/default_drawer_header.dart';
 import 'package:matcha/views/scaffold/default_app_bar.dart';
+import '../models/chat.dart';
+import '../routes/app_route_enum.dart';
+import '../routes/args/chat_args.dart';
 
 class MainView extends StatelessWidget{
-  final MainArgs? args;
-  const MainView({super.key, this.args });
+  final AuthInfo args;
+  const MainView({super.key, required this.args });
 
   @override
   Widget build(BuildContext context) {
-    // log(ThemeData.dark().primaryColor);
     return Scaffold(
       drawer: Drawer(
         child: ListView(
           children: [
-            DrawerHeader(child: Text(args?.user.login ?? "unknown")),
+            DefaultDrawerHeader(authInfo: args),
+            // UserAccountsDrawerHeader(
+            //   decoration: BoxDecoration(color: Theme.of(context).cardColor),
+            //   onDetailsPressed: (){},
+
+            //   currentAccountPicture: CircleAvatar(),
+            //   accountName: Text("dddd"),
+            //   accountEmail: Text("ddd")
+            // )
           ],
         )
       ),
@@ -25,15 +33,23 @@ class MainView extends StatelessWidget{
       body: Center(
         child: ListView(
           children: [
-            ChatCard("Hello")
+            ChatCard(
+              "Временный чат",
+              onTap: ()=>_onChatTap(context),
+            )
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: (){},
-        tooltip: 'Increment',
+        onPressed: ()=>Navigator.of(context).push(AppRoute.createChat.route.build(null)),
+        tooltip: 'Написать',
         child: const Icon(Icons.edit),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
+  }
+
+  void _onChatTap(context) {
+    var chat = Chat(name: "Временный чат",id:3);
+    Navigator.of(context).push(AppRoute.chat.route.build(ChatArgs(chat:chat, authInfo: args)));
   }
 }

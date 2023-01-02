@@ -4,7 +4,7 @@ import 'package:matcha/router/base_route.dart';
 class NotFoundRoute extends IBaseRoute{
   const NotFoundRoute();
   @override
-  Route build(RouteSettings settings, dynamic arguments) {
+  Route build(dynamic arguments, { RouteSettings? settings }) {
     return MaterialPageRoute(
       settings: settings,
       builder: (BuildContext context){

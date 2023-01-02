@@ -4,10 +4,13 @@ import 'package:matcha/routes/routes.dart';
 
 enum AppRoute<T extends IBaseRoute>{
   notFound("/not_found", NotFoundRoute()),
-  main("/", MainRoute()),
+  splashScreen("/", SplashScreenRoute()),
+  main("/main", MainRoute()),
   chatsList("/chats_list", MainRoute()),
   login("/login", LoginRoute()),
+  profile("/profile", ProfileRoute()),
   chat("/chat", ChatRoute()),
+  createChat("/createChat", CreateChatRoute()),
   loading("_loading", LoadingRoute());
   final String name;
   final T route;

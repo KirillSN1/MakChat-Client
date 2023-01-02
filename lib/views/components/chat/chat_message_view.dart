@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:matcha/models/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
+import 'package:matcha/services/repositories/auth/auth_info.dart';
 
 class ChatMessageView extends StatelessWidget {
   final ChatMessage message;
   final bool me;
-  ChatMessageView({super.key, required this.message }):me = message.authorId == 0;
+  final AuthInfo authInfo;
+  ChatMessageView({super.key, required this.message, required this.authInfo })
+    :me = message.authorId == authInfo.user.id;
   @override
   Widget build(BuildContext context) {
     final thame = Theme.of(context);
@@ -48,16 +51,20 @@ class ChatMessageView extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Row(
-                          children: [
-                            Text(time, style: thame.textTheme.bodySmall),
-                            SizedBox(
-                              height: 20,
-                              child: FittedBox(
-                                child: getStatusWidget(),
-                              ),
-                            )
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Row(
+                            children: [
+                              Text(time, style: thame.textTheme.bodySmall),
+                              if(me)
+                              SizedBox(
+                                height: 16,
+                                child: FittedBox(
+                                  child: getStatusWidget(),
+                                ),
+                              )
+                            ],
+                          ),
                         )
                       ],
                     ),
@@ -73,9 +80,9 @@ class ChatMessageView extends StatelessWidget {
   
   Widget getStatusWidget() {
     switch(message.status){
-      case MessgaeStatus.sending: return  const CircularProgressIndicator();
-      case MessgaeStatus.sended: return const Icon(Icons.done_rounded);
-      case MessgaeStatus.readed: return const Icon(Icons.done_all_rounded);
+      case MessageStatus.sending: return  const CircularProgressIndicator();
+      case MessageStatus.sended: return const Icon(Icons.done_rounded);
+      case MessageStatus.readed: return const Icon(Icons.done_all_rounded);
     }
   }
 }

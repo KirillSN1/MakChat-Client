@@ -1,4 +1,6 @@
-abstract class AuthError implements Exception{
+import 'package:matcha/services/repositories/errors.dart';
+
+abstract class AuthError implements RepositoryError{
   final String message;
   AuthError(this.message);
 }
@@ -10,9 +12,6 @@ class UserAlreadyExistsError extends AuthError{
 }
 class UserNotExistsError extends AuthError{
   UserNotExistsError(super.message);
-}
-class UnhandledAuthError extends AuthError{
-  UnhandledAuthError(super.message);
 }
 class IncorrectPasswordOrTokenError extends AuthError{
   IncorrectPasswordOrTokenError(super.message);

@@ -1,4 +1,4 @@
-import 'package:matcha/models/user.dart';
+import 'package:matcha/models/user/user.dart';
 
 class AuthInfo{
   User user;
@@ -8,7 +8,7 @@ class AuthInfo{
   factory AuthInfo.jsonParse(Map<String, dynamic> json){
     return AuthInfo(
       token: json["token"] as String, 
-      user: User.jsonParse(json["user"]) 
+      user: User(id:json["id"], login:json["login"])
     );
   }
 }
