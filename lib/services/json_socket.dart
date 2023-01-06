@@ -8,9 +8,9 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 class JsonSocket{
   late final WebSocketChannel _channel;
-  final onData = Event<Map<String,dynamic>>();
-  final onError = Event();
-  final onDone = Event();
+  final onData = NullableEvent<Map<String,dynamic>>();
+  final onError = NullableEvent();
+  final onDone = NullableEvent();
   JsonSocket(this._channel);
   static Future<JsonSocket> connect() async {
     final channel = await Connector.connect();

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -92,8 +95,9 @@ class _ChatTextFieldState extends State<ChatTextField> {
 
   void _onSend([String? value]){
     final text = value ?? widget._controller.text;
-    if(text.trim().isEmpty) return;
-    widget.onSend?.call(text);
+    if(text.trim().isNotEmpty){
+      widget.onSend?.call(text.replaceAll(RegExp(r'(^\n)|(\n$)'),""));
+    }
     if(widget.clearAfterSend) widget._controller.text = "";
     if(widget.autoRequestFocus) widget._focusNode.requestFocus();
   }

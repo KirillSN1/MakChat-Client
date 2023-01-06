@@ -13,11 +13,13 @@ import '../../services/json_socket.dart';
 
 class WSChatClient{
   late JsonSocket _socket;
-  final onMessage = Event<WSChatMessage>();
-  final onConnect = Event<WSConnectMessage>();
-  final onDisconnect = Event<DisconnectReson>();
+  final onMessage = NullableEvent<WSChatMessage>();
+  final onConnect = NullableEvent<WSConnectMessage>();
+  final onDisconnect = NullableEvent<DisconnectReson>();
   bool _connected = false;
   bool get connected=>_connected;
+
+  WSChatClient();
 
   Future connect(int chatId, String token) async {
     _socket = await JsonSocket.connect();

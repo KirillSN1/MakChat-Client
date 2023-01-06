@@ -1,81 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
-import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
-import 'package:matcha/chat/ws_messages/client/ws_chat_request/ws_chat_request.dart';
-import 'package:matcha/chat/ws_messages/server/ws_chat_message/ws_chat_message.dart';
 import 'package:matcha/env.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
-import 'package:matcha/models/message_status.dart';
-import 'package:matcha/models/messages_groups_list.dart';
+import 'package:matcha/models/messages_channel.dart';
 import 'package:matcha/routes/args/chat_args.dart';
+import 'package:matcha/views/components/chat/chat_app_bar.dart';
 import 'package:matcha/views/components/chat/chat_text_field.dart';
-import 'package:matcha/views/components/chat/messages_groups_view.dart';
-import 'package:matcha/views/components/custom_back_button.dart';
-
+import 'package:matcha/views/components/chat/default_message_group_view.dart';
 
 enum ChatViewState{
   loading, loaded, errored
 }
 
-
 class ChatView extends StatefulWidget{
   final ChatArgs args;
-
-  ChatView({super.key, required this.args }){
-    if(args == null) throw ArgumentError(args,"args");
-  }
-
+  const ChatView({super.key, required this.args });
   @override
   State<ChatView> createState() => _ChatViewState();
 }
 
-class _ChatViewState extends State<ChatView> {
-  // JsonSocket? _socket;
-  final WSChatClient _client = WSChatClient();
+class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
+  late final MessagesChannel _messagesChannel = MessagesChannel(widget.args.authInfo);
   late ChatViewState _state;
-  // final List<ChatMessage> _messages = [];
-  final MessagesGrouper _messagesGrouper = MessagesGrouper();
   final _inputContriller = TextEditingController();
   final ScrollController _scrollController = ScrollController(keepScrollOffset: true);
   String errorMessage = "";
+  Map<ChatMessage,AnimationController> messageAnimationControllers = {};
+
+  @override
+  initState() {
+    _state = ChatViewState.loading;
+    super.initState();
+    _connect();
+  }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const CustomBackButton(),
-        title: Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Hero(
-                tag: "avatar_${(widget.args.authInfo.user.id).toString()}",
-                child: const CircleAvatar(
-                  radius: 23,
-                  backgroundColor: Colors.blue,
-                  child: Icon(Icons.bookmark_outline_rounded, color: Colors.white,),
-                ),
-              ),
-            ),
-            Text(widget.args.chat.name)
-          ],
-        )
-      ),
+      appBar: ChatAppBar(authInfo: widget.args.authInfo, chat:  widget.args.chat),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if(_state == ChatViewState.loaded)
           Expanded(
-            child: ListView(
-              controller: _scrollController,
-              children:[
-                for(final messageGroup in _messagesGrouper.groups.entries)
-                  MessagesGroupView(
-                    authInfo: widget.args.authInfo, 
-                    messages: messageGroup.value,
-                  )
-              ]
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: double.infinity),
+              alignment: Alignment.bottomCenter,
+              child: ListView(
+                controller: _scrollController,
+                shrinkWrap: true,
+                children:[
+                  for(final messageGroup in _messagesChannel.messagesGroups)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 3, bottom: 6),
+                      child: DefaultMessagesGroupView(
+                        authInfo: widget.args.authInfo, 
+                        messageAnimationControllers: messageAnimationControllers, 
+                        messages: messageGroup.messages,
+                      ),
+                    )
+                ]
+              ),
             ),
           ),
           if(_state == ChatViewState.loading)
@@ -84,29 +69,31 @@ class _ChatViewState extends State<ChatView> {
             Expanded(child: Center(child: Text(errorMessage))),
           ChatTextField(
             controller: _inputContriller,
-            onSend: (_)=>_sendInputData(),
+            onSend: _sendMessage,
           )
         ],
       ),
     );
   }
-
-  @override
-  initState() {
-    _state = ChatViewState.loading;
-    super.initState();
-    _connect();
-  }
   Future _connect() async {
     final chatId = widget.args.chat.id;
-    _client.onConnect.addListener(_onConnect);
-    _client.onMessage.addListener(_onGiveMessage);
-    _client.onDisconnect.addListener(_onDisconnect);
-    await _client.connect(chatId, widget.args.authInfo.token);
+    _messagesChannel.onDisconnect.addListener(_onDisconnect);
+    _messagesChannel.onSended.addListener(_onSended);
+    _messagesChannel.onReceived.addListener(_onReceived);
+    _messagesChannel.onReceivedChanged.addListener(_onReceivedChanged);
+    await _messagesChannel.connect(chatId);
     setState(() { _state = ChatViewState.loaded; });
   }
-  void _onConnect(_) {
-    setState(() { _state = ChatViewState.loaded; });
+  void _onSended(ChatMessage eventData) {
+    setState(() {});
+  }
+  void _onReceived(ChatMessage eventData) {
+    setState(() {
+      _animateMessageExpanding(eventData);
+    });
+  }
+  void _onReceivedChanged(ChatMessage eventData) {
+    setState(() {});
   }
   void _onDisconnect(DisconnectReson? reson){
     if(reson == null || reson.code == DisconnectReson.normal) return;
@@ -125,62 +112,28 @@ class _ChatViewState extends State<ChatView> {
     }
     setState(() { _state = ChatViewState.errored; });
   }
-  _onGiveMessage(WSChatMessage? message){
-    if(message == null) return;
-    setState(() {
-      final messageDateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
-      final groupKey = MessagesGroupKey.from(message.appUserId, messageDateTime);
-      final messageGroup = _messagesGrouper.groups[groupKey];
-      final chatMessageIndex = messageGroup==null?-1:messageGroup.indexWhere(
-        (m)=>m.id == message.id ||
-          m.id == 0 &&
-          m.authorId == message.appUserId &&
-          m.text == message.text &&
-          m.dateTime.millisecondsSinceEpoch == message.created_at);
-      if(messageGroup != null && chatMessageIndex >= 0){
-        final chatMessage = messageGroup[chatMessageIndex];
-        if(chatMessage.id == message.id){
-          chatMessage.text = message.text;
-          chatMessage.changed = message.changed;
-          chatMessage.dateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
-        }
-        if(chatMessage.id == ChatMessage.defaultId) chatMessage.id = message.id;
-        chatMessage.status = MessageStatus.byValue(message.status,MessageStatus.sended);
-      }
-      else{
-        _messagesGrouper.add(ChatMessage(
-          message.id,
-          message.text,
-          DateTime.fromMillisecondsSinceEpoch(message.updated_at),
-          message.appUserId,
-          MessageStatus.byValue(message.status,MessageStatus.sended),
-          message.changed
-        ));
-      }
+  _sendMessage(String text) async {
+    setState((){
+      ChatMessage message = _messagesChannel.send(text);
+      _animateMessageExpanding(message);
     });
   }
+  Future _animateMessageExpanding(ChatMessage message) async {
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    jumpEnd()=>_scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    controller.addListener(jumpEnd);
+    messageAnimationControllers[message] = controller;
+    await controller.forward();
+    controller.removeListener(jumpEnd);
+    messageAnimationControllers.remove(message);
+  }
+  
   @override
   dispose(){
-    _client.disconnect();
+    _messagesChannel.disconnect();
     super.dispose();
-  }
-  void _sendInputData() {
-    final text = _inputContriller.value.text;
-    final message = ChatMessage.create(text, widget.args.authInfo.user.id);
-    _client.send(
-      WSChatRequest(
-        text: text, 
-        dateTime: message.dateTime.millisecondsSinceEpoch
-      ),
-      true
-    );
-    setState(() {
-      _messagesGrouper.add(message);
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.ease);
-    });
   }
 }
