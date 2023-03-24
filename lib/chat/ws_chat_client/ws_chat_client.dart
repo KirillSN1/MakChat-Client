@@ -1,38 +1,55 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
+import 'package:matcha/chat/ws_chat_client/messages_receiver.dart';
 import 'package:matcha/chat/ws_messages/client/ws_chat_request/ws_chat_request.dart';
 import 'package:matcha/chat/ws_messages/client/ws_connect_request/ws_connect_request.dart';
-import 'package:matcha/chat/ws_messages/server/ws_chat_message/ws_chat_message.dart';
-import 'package:matcha/chat/ws_messages/server/ws_connect_message/ws_connect_message.dart';
 import 'package:matcha/chat/ws_messages/ws_message_types.dart';
 import 'package:matcha/low/event.dart';
-import 'package:matcha/structs/Json.dart';
-import '../../services/auth/auth.dart';
+import 'package:matcha/structs/json.dart';
 import '../../services/json_socket.dart';
 
-class WSChatClient{
-  late JsonSocket _socket;
-  final onMessage = NullableEvent<WSChatMessage>();
-  final onConnect = NullableEvent<WSConnectMessage>();
+class WSClient{
+  final JsonSocket _socket;
+  final MessageReceiver receiver;
+  final onAuth = NullableEvent<bool>();
+  final onConnect = NullableEvent();
   final onDisconnect = NullableEvent<DisconnectReson>();
+  bool _authorized = false;
   bool _connected = false;
+  bool get authorized=>_connected && _authorized;
   bool get connected=>_connected;
+  Event<Json> get onData => _socket.onData;
 
-  WSChatClient();
-
-  Future connect(int chatId, String token) async {
-    _socket = await JsonSocket.connect();
-    _socket.onData.addListener(_onData);
+  WSClient._(this._socket):receiver = MessageReceiver(_socket.onData){
+    receiver.addListener(WSMessageType.connection.name, _onAuth);
     _socket.onDone.addListener(_onDone);
     _socket.listen();
-    final message = WSConnectRequest(token:token, chatId:chatId );
-    _socket.send(message.toJson());
+    _connected = true;
+    onConnect.invoke();
+  }
+  static Future<WSClient> connect() async {
+    return WSClient._(await JsonSocket.connect());
+  }
+  Future<bool> auth(String token) async {
+    final completer = Completer<bool>();
+    if(_connected){
+      final message = WSConnectRequest(token:token);
+      receiver.addListener(once:true,WSMessageType.connection.name, (message) {
+        _onAuth(message);
+        completer.complete(_authorized);
+      });
+      _socket.send(message.toJson());
+    } else{
+      onConnect.addListener(once: true, (_) async =>{ completer.complete(await auth(token)) });
+    }
+    return completer.future;
   }
   Future disconnect() async {
-    _socket.onData.removeListener(_onData);
+    receiver.dispose();
     _socket.onDone.removeListener(_onDone);
     if(_socket.closeCode == null) await _socket.close();
+    _authorized = false;
     _connected = false;
   }
   Future disconnectAndNotify() async {
@@ -41,44 +58,26 @@ class WSChatClient{
     final reson = _socket.closeReason??"";
     onDisconnect.invoke(DisconnectReson(code, reson));
   }
-  ///Sends messages into chat. If disconnected and [collectIfDisconnected] == false, throws Exception;
-  ///If [collectIfDisconnected] == true, [message] will send after connect.
-  send(WSChatRequest message, [bool collectIfDisconnected = false]){
-    if(connected) {
+  ///Sends messages into chat. If disconnected or unauthorized and [collectIfUnauthorized] == false,
+  ///throws Exception;
+  ///If [collectIfUnauthorized] == true, [message] will send after connect and unauthorize.
+  send(WSChatRequest message, [bool collectIfUnauthorized = false]){
+    if(authorized) {
       _socket.send(message.toJson());
-    } else if(collectIfDisconnected) {
-      onConnect.addListener(once:true,(_)=>send(message,collectIfDisconnected));
+    } else if(collectIfUnauthorized) {
+      onAuth.addListener(once:true,(_)=>send(message,collectIfUnauthorized));
     }
   }
-  void _onData(Json? json){
-    if(json == null) return;
-    final type = WSMessageType.fromString(json["type"]??"");
-    switch(type){
-      case WSMessageType.connection:
-        _onConnectResponseMessage(WSConnectMessage.fromJson(json));
-        break;
-      case WSMessageType.chat:
-        _onChatMessage(WSChatMessage.fromJson(json));
-        break;
-      case WSMessageType.unknown:break;//skip unknown messages
-    }
-  }
-  void _onConnectResponseMessage(WSConnectMessage message){
-    if(_connected == message.connected) return;
-    if(message.connected) {
-      _connected = message.connected;
-      onConnect.invoke(message);
+  void _onAuth(Json message){
+    final authorized = message['connected']??false;
+    if(_authorized == authorized) return;
+    if(authorized) {
+      _authorized = authorized;
+      onAuth.invoke(authorized);
     } else {
       disconnectAndNotify();
     }
-    _connected = message.connected;
-  }
-  void _onChatMessage(WSChatMessage message) {
-    if(_connected) {
-      onMessage.invoke(message);
-    } else {
-      onConnect.addListener(once:true,(_)=>_onChatMessage(message));
-    }
+    _authorized = authorized;
   }
   void _onDone(eventData) {
     disconnectAndNotify();

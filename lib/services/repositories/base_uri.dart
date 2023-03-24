@@ -21,4 +21,5 @@ class BaseUri{
       userInfo: userInfo
     );
   }
+  BaseUri._();
 }

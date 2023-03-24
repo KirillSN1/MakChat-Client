@@ -3,17 +3,19 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:matcha/low/event.dart';
-import 'package:matcha/services/connector.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../env.dart';
 
 class JsonSocket{
   late final WebSocketChannel _channel;
-  final onData = NullableEvent<Map<String,dynamic>>();
+  final onData = Event<Map<String,dynamic>>();
   final onError = NullableEvent();
   final onDone = NullableEvent();
   JsonSocket(this._channel);
   static Future<JsonSocket> connect() async {
-    final channel = await Connector.connect();
+    final uri = Uri(scheme: Env.wsScheme, host: Env.host, port: Env.port);
+    final channel = WebSocketChannel.connect(uri);
     return JsonSocket(channel);
   }
   void send(Map<String, dynamic> json){

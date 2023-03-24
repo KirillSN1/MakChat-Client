@@ -1,8 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
 import 'package:matcha/env.dart';
 import 'package:matcha/routes/app_route_enum.dart';
+import 'package:matcha/routes/routes.dart';
 import 'package:matcha/services/repositories/errors.dart';
 
 import '../services/auth/auth.dart';
@@ -26,13 +27,18 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() {
       _errorMessage = "";
     });
-    Auth.signedIn().then((value) {
+    Auth.signedIn().then((value) async {
+      Route route;
       if(value != null){
-        Navigator.pushReplacement(context, AppRoute.main.route.build(value));
+        final client = await GetIt.instance.getAsync<WSClient>();
+        client.auth(value.token);
+        final args = MainArguments(value);
+        route = AppRoute.main.route.build(args);
       }
       else{
-        Navigator.pushReplacement(context, AppRoute.login.route.build(null));
+        route = AppRoute.login.route.build(null);
       }
+      Navigator.pushReplacement(context, route);
     }).catchError((Object e){
       setState((){
         if(e.runtimeType == RepositoryError){

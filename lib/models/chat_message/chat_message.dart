@@ -1,4 +1,3 @@
-import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:matcha/structs/Json.dart';

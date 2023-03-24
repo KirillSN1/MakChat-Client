@@ -1,14 +1,18 @@
+import 'package:get_it/get_it.dart';
 import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
 import 'package:matcha/chat/ws_messages/client/ws_chat_request/ws_chat_request.dart';
 import 'package:matcha/chat/ws_messages/server/ws_chat_message/ws_chat_message.dart';
+import 'package:matcha/chat/ws_messages/ws_message_types.dart';
 import 'package:matcha/low/event.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
+import 'package:matcha/services/Locator.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
+import '../structs/json.dart';
 import 'messages_groups_list.dart';
 
 class MessagesChannel{
-  final WSChatClient _client = WSChatClient();
+  final WSClient _client;
   late final onDisconnect = _client.onDisconnect;
   final onSended = Event<ChatMessage>();
   final onReceived = Event<ChatMessage>();
@@ -21,29 +25,30 @@ class MessagesChannel{
   List<ChatMessage> get messages=>_messagesGrouper.messages;
   List<ChatMessage> get messagesInSending=>_messagesInSending;
   
-  MessagesChannel(this.authInfo);
-  Future connect(int chatId) async {
-    _client.onMessage.addListener(_onGiveMessage);
-    await _client.connect(chatId, authInfo.token);
+  MessagesChannel._(this.authInfo, this._client){
+    _client.onData.addListener(_onGiveMessage);
   }
-  disconnect(){
-    _client.disconnect();
+  static Future<MessagesChannel> create(AuthInfo authInfo) async {
+    final client = await GetIt.instance.getAsync<WSClient>();
+    return MessagesChannel._(authInfo, client);
   }
-  ChatMessage send(String text){
+  ChatMessage send(int chatId,String text){
     final message = ChatMessage.create(text, authInfo.user.id);
     _messagesGrouper.add(message);
     _messagesInSending.add(message);
     _client.send(
       WSChatRequest(
         text: text, 
+        chatId: chatId,
         dateTime: message.dateTime.millisecondsSinceEpoch
       ),
       true
     );
     return message;
   }
-  _onGiveMessage(WSChatMessage? message){
-    if(message == null) return;
+  _onGiveMessage(Json data){
+    if(data['type']!=WSMessageType.chat.name) return;
+    WSChatMessage message = WSChatMessage.fromJson(data);
     ChatMessage chatMessage;
     if(message.appUserId == authInfo.user.id){//если прилетело предположительно моё сообщение
       final chatMessageIndex = _messagesInSending.indexWhere((sm) {
@@ -78,40 +83,6 @@ class MessagesChannel{
       _messagesGrouper.add(chatMessage);
       onReceived.invoke(chatMessage);
     }
-
-    // setState(() {
-      // final messageDateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
-      // final groupKey = MessagesGroupKey.from(message.id,message.appUserId, messageDateTime);
-      // final messageGroup = _messagesGrouper.groups[groupKey];
-      // final chatMessageIndex = messageGroup==null?-1:messageGroup.indexWhere(
-      //   (m)=>m.id == message.id ||
-      //     m.id == 0 &&
-      //     m.authorId == message.appUserId &&
-      //     m.text == message.text &&
-      //     m.dateTime.millisecondsSinceEpoch == message.created_at);
-      // if(messageGroup != null && chatMessageIndex >= 0){
-      //   final chatMessage = messageGroup[chatMessageIndex];
-      //   if(chatMessage.id == message.id){
-      //     chatMessage.text = message.text;
-      //     chatMessage.changed = message.changed;
-      //     chatMessage.dateTime = DateTime.fromMillisecondsSinceEpoch(message.updated_at);
-      //   }
-      //   if(chatMessage.id == ChatMessage.defaultId) chatMessage.id = message.id;
-      //   chatMessage.status = MessageStatus.byValue(message.status,MessageStatus.sended);
-      // }
-      // else{
-      //   final scrollPixels = _scrollController.position.pixels;
-      //   final maxScrollExtent = _scrollController.position.maxScrollExtent;
-      //   _pushMessage(ChatMessage(
-      //     message.id,
-      //     message.text,
-      //     DateTime.fromMillisecondsSinceEpoch(message.updated_at),
-      //     message.appUserId,
-      //     MessageStatus.byValue(message.status,MessageStatus.sended),
-      //     message.changed
-      //   ),animate: scrollPixels == maxScrollExtent);
-      // }
-    // });
   }
   _copyFromWSMessage(WSChatMessage from, ChatMessage to){
     to.id = from.id;

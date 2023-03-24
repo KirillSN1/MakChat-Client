@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:matcha/models/chat.dart';
+import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/routes/app_route_enum.dart';
 import 'package:matcha/routes/args/chat_args.dart';
+import 'package:matcha/views/components/low/default_card.dart';
 import '../../../../env.dart';
 
 class ChatCard extends StatelessWidget{
-  final String chatName;
+  final String? chatName;
   final Widget? avatar;
   final ChatMessage? lastMessage;
+  final Chat? chat;
   final void Function()? onTap;
   final bool isPeopleChat;
 
-  const ChatCard(this.chatName, { super.key,  this.avatar, this.lastMessage, this.onTap, this.isPeopleChat = false });
+  const ChatCard({ 
+    this.chat,
+    this.chatName,
+    super.key,  
+    this.avatar, 
+    this.lastMessage, 
+    this.onTap, 
+    this.isPeopleChat = false
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return DefaultCard(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        radius: 300,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(6.0),
@@ -27,7 +38,7 @@ class ChatCard extends StatelessWidget{
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3.0),
                 child: Hero(
-                  tag: "avatar_$chatName",
+                  tag: "avatar_${chat?.id??key.hashCode}",
                   child: const CircleAvatar(
                     radius: 25,
                     backgroundColor: Colors.blue,
@@ -40,7 +51,7 @@ class ChatCard extends StatelessWidget{
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(chatName),
+                    Text(chatName ?? chat?.name ?? "Неизвестный чат"),
                     if(isPeopleChat)
                       Text(lastMessage?.text ?? "$chatName теперь в ${Env.appTitile}!")
                   ],

@@ -4,6 +4,7 @@ import 'package:json_annotation/json_annotation.dart';
 enum WSMessageType{
   connection("connection"),
   chat("chat"),
+  chatList("chatList"),
   unknown("");
   final String name;
   const WSMessageType(this.name);

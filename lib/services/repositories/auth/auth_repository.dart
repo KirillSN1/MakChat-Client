@@ -17,7 +17,7 @@ class AuthRepository{
       }));
     switch(response.statusCode){
       case(200):break;
-      case(422):throw LoginFormatError(response.body);
+      case(422):throw RequestArgumentsError(response.body);
       case(409):throw UserAlreadyExistsError(response.body);
       default:throw UnhandledRepositoryError(response.body);
     }

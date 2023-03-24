@@ -7,7 +7,7 @@ import '../../../models/user/user.dart';
 class UserRepository{
   static Future<List<User>> search(String value) async {    
     var response = await http.get(BaseUri.getWith(
-      path: "/Api/getChats", 
+      path: "/Api/findChats", 
       queryParameters: { "search":value })
     );
     var body = response.body;

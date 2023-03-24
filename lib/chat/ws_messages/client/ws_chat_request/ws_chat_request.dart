@@ -8,20 +8,24 @@ class WSChatRequest extends WSMessageBase{
   @override
   final WSMessageType type;
   final int id;
+  final int chatId;
   final String text;
   final int dateTime;
   ///[dateTime] send or edit time (default is [DateTime.now])
   factory WSChatRequest({
     id = 0,
+    chatId = 0,
     text = "",
     required int dateTime
   })=>WSChatRequest._(
     id: id,
+    chatId: chatId,
     text: text,
     dateTime: dateTime
   );
   const WSChatRequest._({
     required this.id,
+    required this.chatId,
     required this.text,
     this.type = WSMessageType.chat,
     required this.dateTime

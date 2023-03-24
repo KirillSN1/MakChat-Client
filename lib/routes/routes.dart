@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
 import 'package:matcha/router/base_route.dart';
 import 'package:matcha/routes/args/chat_args.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
@@ -38,13 +39,18 @@ class ProfileRoute extends IBaseRoute<AuthInfo>{
   }
 }
 
-class MainRoute extends IBaseRoute<AuthInfo>{
+class MainArguments{
+  final AuthInfo authInfo;
+  const MainArguments(this.authInfo);
+}
+class MainRoute extends IBaseRoute<MainArguments>{
   const MainRoute();
   @override
-  Route build(AuthInfo args,{RouteSettings? settings}) {
+  Route build(MainArguments arguments,{RouteSettings? settings}) {
     return MaterialPageRoute(
       settings: settings,
-      builder: (BuildContext context)=>MainView(args: args));
+      builder: (BuildContext context)=>MainView(authInfo: arguments.authInfo)
+      );
   }
 }
 
@@ -70,13 +76,17 @@ class LoadingRoute extends IBaseRoute<ChatArgs>{
     );
   }
 }
-class CreateChatRoute extends IBaseRoute{
+class CreateChatArguments{
+  final AuthInfo authInfo;
+  const CreateChatArguments(this.authInfo);
+}
+class CreateChatRoute extends IBaseRoute<CreateChatArguments>{
   const CreateChatRoute();
   @override
-  Route build(arguments,{RouteSettings? settings}) {
+  Route build(CreateChatArguments arguments,{RouteSettings? settings}) {
     return MaterialPageRoute(
       settings: settings,
-      builder: (BuildContext context)=>const CreateChatView()
+      builder: (BuildContext context)=>CreateChatView(authInfo: arguments.authInfo)
     );
   }
 }

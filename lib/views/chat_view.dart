@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
 import 'package:matcha/env.dart';
+import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/messages_channel.dart';
 import 'package:matcha/routes/args/chat_args.dart';
+import 'package:matcha/services/repositories/chat_repository.dart';
 import 'package:matcha/views/components/chat/chat_app_bar.dart';
 import 'package:matcha/views/components/chat/chat_text_field.dart';
 import 'package:matcha/views/components/chat/default_message_group_view.dart';
@@ -20,7 +22,7 @@ class ChatView extends StatefulWidget{
 }
 
 class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
-  late final MessagesChannel _messagesChannel = MessagesChannel(widget.args.authInfo);
+  late final MessagesChannel _messagesChannel;
   late ChatViewState _state;
   final _inputContriller = TextEditingController();
   final ScrollController _scrollController = ScrollController(keepScrollOffset: true);
@@ -76,13 +78,19 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     );
   }
   Future _connect() async {
-    final chatId = widget.args.chat.id;
+    final chat = await _createSingleChat() ?? widget.args.chat;
+    if(chat.id == 0) errorMessage = "Ошибка создания чата.";
+    _messagesChannel = await MessagesChannel.create(widget.args.authInfo);
     _messagesChannel.onDisconnect.addListener(_onDisconnect);
     _messagesChannel.onSended.addListener(_onSended);
     _messagesChannel.onReceived.addListener(_onReceived);
     _messagesChannel.onReceivedChanged.addListener(_onReceivedChanged);
-    await _messagesChannel.connect(chatId);
     setState(() { _state = ChatViewState.loaded; });
+  }
+  Future<Chat?> _createSingleChat() async {
+    final args = widget.args;
+    if(args is! NewSingleChatArgs) return null;
+    return ChatRepository.createSingle(args.authInfo, args.user);
   }
   void _onSended(ChatMessage eventData) {
     setState(() {});
@@ -114,7 +122,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   }
   _sendMessage(String text) async {
     setState((){
-      ChatMessage message = _messagesChannel.send(text);
+      ChatMessage message = _messagesChannel.send(widget.args.chat.id, text);
       _animateMessageExpanding(message);
     });
   }
@@ -133,7 +141,6 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   
   @override
   dispose(){
-    _messagesChannel.disconnect();
     super.dispose();
   }
 }

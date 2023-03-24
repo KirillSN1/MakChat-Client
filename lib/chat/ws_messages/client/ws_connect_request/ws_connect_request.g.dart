@@ -11,18 +11,17 @@ WSConnectRequest _$WSConnectRequestFromJson(Map<String, dynamic> json) =>
       type: $enumDecodeNullable(_$WSMessageTypeEnumMap, json['type']) ??
           WSMessageType.connection,
       token: json['token'] as String?,
-      chatId: json['chatId'] as int,
     );
 
 Map<String, dynamic> _$WSConnectRequestToJson(WSConnectRequest instance) =>
     <String, dynamic>{
       'type': _$WSMessageTypeEnumMap[instance.type]!,
       'token': instance.token,
-      'chatId': instance.chatId,
     };
 
 const _$WSMessageTypeEnumMap = {
   WSMessageType.connection: 'connection',
   WSMessageType.chat: 'chat',
+  WSMessageType.chatList: 'chatList',
   WSMessageType.unknown: '',
 };

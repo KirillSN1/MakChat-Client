@@ -8,7 +8,6 @@ part 'ws_connect_request.g.dart';
 class WSConnectRequest extends WSMessageBase{
   @override final WSMessageType type;
   final String? token;
-  final int chatId;
-  const WSConnectRequest({ this.type = WSMessageType.connection, required this.token, required this.chatId});
+  const WSConnectRequest({ this.type = WSMessageType.connection, required this.token});
   Json toJson()=>_$WSConnectRequestToJson(this);
 }

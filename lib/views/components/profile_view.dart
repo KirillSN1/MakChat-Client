@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:matcha/router/app_router.dart';
 import 'package:matcha/routes/app_route_enum.dart';
 import 'package:matcha/services/auth/auth.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/views/components/user_status_view.dart';
 import 'package:matcha/views/scaffold/default_app_bar.dart';
+
+import 'low/default_card.dart';
 
 class ProfileView extends StatelessWidget {
   final AuthInfo authInfo;
@@ -14,23 +13,25 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: DefaultAppBar(),
       body: Column(
         children: [
           _ProfileRawDecoration(child:  UserStatusView(user: authInfo.user)),
-          _ProfileRawDecoration(
-            child: Row(children: [
-              const Icon(Icons.logout_rounded),
-              InkWell(
-                onTap: ()=>_onLogoutTap(context),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 10),
-                  child: Text("Выход")
-                ),
-              )
-            ])
+          DefaultCard(
+            child: InkWell(
+              onTap: ()=>_onLogoutTap(context),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Row(children: const [
+                  Icon(Icons.logout_rounded),
+                  Padding(
+                    padding: EdgeInsets.only(left: 10),
+                    child: Text("Выход")
+                  ),
+                ]),
+              ),
+            ),
           ),
         ]
       ),
@@ -52,13 +53,18 @@ class _ProfileRawDecoration extends StatelessWidget {
     final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        border: Border(bottom: BorderSide(color: theme.canvasColor))
+        border: Border(bottom: BorderSide(color: theme.canvasColor,width: 3))
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: child
-      ),
+      child: DefaultCard(
+        shape: Border(bottom: BorderSide(
+          color: theme.canvasColor,
+          width: 1
+        )),
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: child,
+        ),
+      )
     );
   }
 }

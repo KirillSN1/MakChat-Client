@@ -4,6 +4,6 @@ class Env{
   static const appTitile = "MakChat";
   static const scheme = local?"http":"https";
   static const wsScheme = local?"ws":"wss";
-  static const host = local?"127.0.0.1":"makchat.loca.lt";
+  static const host = local?"127.0.0.1":"makchat1.loca.lt";
   static const port = local?5000:null;
 }
