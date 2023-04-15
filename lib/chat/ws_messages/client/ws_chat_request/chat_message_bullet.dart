@@ -1,34 +1,35 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:matcha/chat/ws_messages/ws_message_base.dart';
+import 'package:matcha/chat/ws_messages/ws_structures.dart';
 import 'package:matcha/chat/ws_messages/ws_message_types.dart';
-part 'ws_chat_request.g.dart';
+part 'chat_message_bullet.g.dart';
 
 @JsonSerializable(constructor: "_")
-class WSChatRequest extends WSMessageBase{
+class ChatMessageBullet extends Bullet{
   @override
-  final WSMessageType type;
+  final PunchType type;
   final int id;
   final int chatId;
   final String text;
   final int dateTime;
   ///[dateTime] send or edit time (default is [DateTime.now])
-  factory WSChatRequest({
+  factory ChatMessageBullet({
     id = 0,
     chatId = 0,
     text = "",
     required int dateTime
-  })=>WSChatRequest._(
+  })=>ChatMessageBullet._(
     id: id,
     chatId: chatId,
     text: text,
     dateTime: dateTime
   );
-  const WSChatRequest._({
+  const ChatMessageBullet._({
     required this.id,
     required this.chatId,
     required this.text,
-    this.type = WSMessageType.chat,
+    this.type = PunchType.chat,
     required this.dateTime
   });
-  toJson()=>_$WSChatRequestToJson(this);
+  @override
+  toJson()=>_$ChatMessageBulletToJson(this);
 }

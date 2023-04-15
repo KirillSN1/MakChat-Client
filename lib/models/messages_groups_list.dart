@@ -2,7 +2,7 @@ import 'package:matcha/low/date_time_ext.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
 
-typedef _MessagesGroup = List<ChatMessage>;
+// typedef _MessagesGroup = List<ChatMessage>;
 // class MessagesGroupKey extends Equatable {
 //   final int authorId;//автор
 //   final int dateTime;//время с точностью до минуты
@@ -20,7 +20,11 @@ typedef _MessagesGroup = List<ChatMessage>;
 class MessagesGrouper{
   final List<MessagesGroup> _groups = [];
   List<MessagesGroup>  get groups=>_groups;
-  List<ChatMessage> get messages=>_groups.map((g)=>g.messages).reduce((value, element) => value+element);
+  List<ChatMessage> get messages {
+    var messagesLists = _groups.map((g)=>g.messages);
+    // if(messagesLists)
+    return messagesLists.reduce((value, element) => value+element);
+  }
   MessagesGrouper([List<ChatMessage>? messages]){
     if(messages != null){
       for(final message in messages) {
@@ -66,7 +70,7 @@ class MessagesGrouper{
     }
     //добавляем сообщение и группу для него, если не нашлось подходящей
     if(availableGroup == null){
-      availableGroup = MessagesGroup(message.authorId, message.dateTime,[message]);
+      availableGroup = MessagesGroup(message.userId, message.dateTime,[message]);
       groups.add(availableGroup);
     }
     else {
@@ -74,8 +78,8 @@ class MessagesGrouper{
     }
     if(messagesOnSending.isNotEmpty){
       //добавляем группу для сообщений в статусе "отправки"
-      final authorId = messagesOnSending[0].authorId;
-      availableGroup = MessagesGroup(authorId, DateTime.now(),messagesOnSending);
+      final userId = messagesOnSending[0].userId;
+      availableGroup = MessagesGroup(userId, DateTime.now(),messagesOnSending);
       groups.add(availableGroup);
     }
   }
@@ -89,12 +93,12 @@ class MessagesGrouper{
 }
 class MessagesGroup{
   static const Duration dateTimeRound = Duration(seconds: Duration.secondsPerMinute);
-  final int authorId;//автор
+  final int userId;//автор
   final DateTime dateTime;//время с точностью до минуты
   List<ChatMessage> messages;
-  MessagesGroup(this.authorId, DateTime dateTime, [this.messages = const []])
+  MessagesGroup(this.userId, DateTime dateTime, [this.messages = const []])
     :dateTime = dateTime.roundDown(dateTimeRound);
   match(ChatMessage message){
-    return message.authorId==authorId && message.dateTime.roundDown(dateTimeRound) == dateTime;
+    return message.userId==userId && message.dateTime.roundDown(dateTimeRound) == dateTime;
   }
 }

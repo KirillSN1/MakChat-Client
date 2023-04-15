@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
 import 'package:matcha/env.dart';
@@ -28,6 +30,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController(keepScrollOffset: true);
   String errorMessage = "";
   Map<ChatMessage,AnimationController> messageAnimationControllers = {};
+  Chat? chat;
 
   @override
   initState() {
@@ -39,7 +42,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ChatAppBar(authInfo: widget.args.authInfo, chat:  widget.args.chat),
+      appBar: ChatAppBar(chat: chat),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -56,7 +59,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                     Padding(
                       padding: const EdgeInsets.only(right: 3, bottom: 6),
                       child: DefaultMessagesGroupView(
-                        authInfo: widget.args.authInfo, 
+                        userId: widget.args.authInfo.user.id, 
                         messageAnimationControllers: messageAnimationControllers, 
                         messages: messageGroup.messages,
                       ),
@@ -78,9 +81,10 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     );
   }
   Future _connect() async {
-    final chat = await _createSingleChat() ?? widget.args.chat;
-    if(chat.id == 0) errorMessage = "Ошибка создания чата.";
-    _messagesChannel = await MessagesChannel.create(widget.args.authInfo);
+    log("chat_view connect");
+    chat = await _createSingleChat() ?? widget.args.chat;
+    if(chat!.id == 0) errorMessage = "Ошибка создания чата.";
+    _messagesChannel = await MessagesChannel.create()..listen();
     _messagesChannel.onDisconnect.addListener(_onDisconnect);
     _messagesChannel.onSended.addListener(_onSended);
     _messagesChannel.onReceived.addListener(_onReceived);
@@ -90,7 +94,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   Future<Chat?> _createSingleChat() async {
     final args = widget.args;
     if(args is! NewSingleChatArgs) return null;
-    return ChatRepository.createSingle(args.authInfo, args.user);
+    return ChatRepository.create(args.authInfo, args.chat.users);
   }
   void _onSended(ChatMessage eventData) {
     setState(() {});
@@ -121,8 +125,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     setState(() { _state = ChatViewState.errored; });
   }
   _sendMessage(String text) async {
+    if(chat == null) throw Exception("chat must not be null");
     setState((){
-      ChatMessage message = _messagesChannel.send(widget.args.chat.id, text);
+      ChatMessage message = _messagesChannel.send(chat!.id, text);
       _animateMessageExpanding(message);
     });
   }
@@ -141,6 +146,11 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   
   @override
   dispose(){
+    _messagesChannel.stopListening();
+    _messagesChannel.onDisconnect.removeListener(_onDisconnect);
+    _messagesChannel.onSended.removeListener(_onSended);
+    _messagesChannel.onReceived.removeListener(_onReceived);
+    _messagesChannel.onReceivedChanged.removeListener(_onReceivedChanged);
     super.dispose();
   }
 }

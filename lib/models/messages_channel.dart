@@ -1,12 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
-import 'package:matcha/chat/ws_messages/client/ws_chat_request/ws_chat_request.dart';
-import 'package:matcha/chat/ws_messages/server/ws_chat_message/ws_chat_message.dart';
+import 'package:matcha/chat/ws_messages/client/ws_chat_request/chat_message_bullet.dart';
+import 'package:matcha/chat/ws_messages/server/chat_message_punch/chat_message_punch.dart';
 import 'package:matcha/chat/ws_messages/ws_message_types.dart';
 import 'package:matcha/low/event.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
-import 'package:matcha/services/Locator.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import '../structs/json.dart';
 import 'messages_groups_list.dart';
@@ -19,40 +18,49 @@ class MessagesChannel{
   final onReceivedChanged = Event<ChatMessage>();
   final MessagesGrouper _messagesGrouper = MessagesGrouper();
   final List<ChatMessage> _messagesInSending = [];
-  final AuthInfo authInfo;
 
   List<MessagesGroup> get messagesGroups=>_messagesGrouper.groups;
   List<ChatMessage> get messages=>_messagesGrouper.messages;
   List<ChatMessage> get messagesInSending=>_messagesInSending;
   
-  MessagesChannel._(this.authInfo, this._client){
+  MessagesChannel._(this._client);
+  ///Создает и возвращает экземпляр [MessagesChannel].
+  ///ВНИМАНИЕ: для обмена сообщениями с сервером использует
+  ///экземпляр класса [WSClient], зарегистрированный глобально при помощи [GetIt]
+  static Future<MessagesChannel> create() async {
+    final client = await GetIt.instance.getAsync<WSClient>();
+    return MessagesChannel._(client);
+  }
+  void listen(){
+    if(_client.onData.isListener(_onGiveMessage)) {
+      throw Exception("Already listens!");
+    }
     _client.onData.addListener(_onGiveMessage);
   }
-  static Future<MessagesChannel> create(AuthInfo authInfo) async {
-    final client = await GetIt.instance.getAsync<WSClient>();
-    return MessagesChannel._(authInfo, client);
+  void stopListening(){
+    _client.onData.removeListener(_onGiveMessage);
   }
-  ChatMessage send(int chatId,String text){
-    final message = ChatMessage.create(text, authInfo.user.id);
+  ChatMessage send(int chatId, String text){
+    final message = ChatMessage.create(text, _client.userId);
     _messagesGrouper.add(message);
     _messagesInSending.add(message);
     _client.send(
-      WSChatRequest(
-        text: text, 
-        chatId: chatId,
+      ChatMessageBullet(
+        chatId:chatId,
+        text: text,
         dateTime: message.dateTime.millisecondsSinceEpoch
       ),
       true
     );
     return message;
   }
-  _onGiveMessage(Json data){
-    if(data['type']!=WSMessageType.chat.name) return;
-    WSChatMessage message = WSChatMessage.fromJson(data);
+  _onGiveMessage(Json messageJson){
+    if(messageJson['type']!=PunchType.chat.name) return;
+    ChatMessagePunch message = ChatMessagePunch.fromJson(messageJson['data']);
     ChatMessage chatMessage;
-    if(message.appUserId == authInfo.user.id){//если прилетело предположительно моё сообщение
+    if(message.userId == _client.userId){//если прилетело предположительно моё сообщение
       final chatMessageIndex = _messagesInSending.indexWhere((sm) {
-        return sm.dateTime.millisecondsSinceEpoch == message.created_at
+        return sm.dateTime.millisecondsSinceEpoch == message.createdAt
           && sm.text == message.text;
       });
       if(chatMessageIndex>=0){//если я получил свое сообщение
@@ -75,8 +83,8 @@ class MessagesChannel{
       chatMessage = ChatMessage(
         message.id,
         message.text,
-        DateTime.fromMillisecondsSinceEpoch(message.updated_at),
-        message.appUserId,
+        DateTime.fromMillisecondsSinceEpoch(message.updatedAt),
+        message.userId,
         MessageStatus.byValue(message.status,MessageStatus.sended),
         message.changed
       );
@@ -84,10 +92,10 @@ class MessagesChannel{
       onReceived.invoke(chatMessage);
     }
   }
-  _copyFromWSMessage(WSChatMessage from, ChatMessage to){
+  _copyFromWSMessage(ChatMessagePunch from, ChatMessage to){
     to.id = from.id;
     to.status = MessageStatus.byValue(from.status);
-    to.dateTime = DateTime.fromMillisecondsSinceEpoch(from.updated_at);
+    to.dateTime = DateTime.fromMillisecondsSinceEpoch(from.updatedAt);
     to.text = from.text;
     to.changed = from.changed;
   }

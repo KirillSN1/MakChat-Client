@@ -3,10 +3,10 @@ import 'package:matcha/services/repositories/auth/auth_info.dart';
 
 class MessagesGroupView<T> extends StatefulWidget {
   final List<T> messages;
-  final AuthInfo authInfo;
+  final int userId;
   
   final Widget Function(int index) builder;
-  const MessagesGroupView({super.key, required this.messages, required this.authInfo, required this.builder});
+  const MessagesGroupView({super.key, required this.messages, required this.userId, required this.builder});
   @override
   State<MessagesGroupView> createState() => _MessagesGroupViewState();
 }
@@ -14,7 +14,7 @@ class MessagesGroupView<T> extends StatefulWidget {
 class _MessagesGroupViewState extends State<MessagesGroupView> {
   @override
   Widget build(BuildContext context) {
-    final me = widget.messages[0].authorId == widget.authInfo.user.id;
+    final me = widget.messages[0].userId == widget.userId;
     return Row(
       mainAxisAlignment: me?MainAxisAlignment.end:MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,

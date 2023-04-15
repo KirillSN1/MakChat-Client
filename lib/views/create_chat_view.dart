@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/routes/args/chat_args.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
+import 'package:matcha/services/repositories/chat_repository.dart';
 import 'package:matcha/services/repositories/errors.dart';
 import 'package:matcha/services/repositories/users/user_repository.dart';
 import 'package:matcha/views/components/chat_list/chat_card/chat_card.dart';
+import '../models/chat/chat.dart';
 import '../models/user/user.dart';
 import '../routes/app_route_enum.dart';
 
@@ -21,7 +23,7 @@ enum SearchingState{
 }
 class _CreateChatViewState extends State<CreateChatView> {
   final FocusNode _searchFocusNode = FocusNode();
-  List<User> users = [];
+  List<Chat> chats = [];
   bool _searchActive = false;
   SearchingState _searchingState = SearchingState.ready;
 
@@ -66,12 +68,12 @@ class _CreateChatViewState extends State<CreateChatView> {
           if(_searchingState == SearchingState.searching)
             const Center(child:LinearProgressIndicator()),
           if(_searchingState == SearchingState.ready) ...[
-            if(_searchActive && users.isEmpty)
+            if(_searchActive && chats.isEmpty)
               const Center(child: Text("Пользователи не найдены")),
-            ...users.map((user) => 
+            ...chats.map((chat) => 
               ChatCard(
-                chatName:user.login,
-                onTap: ()=>_onChatTap(user,context),
+                chatName:chat.name,
+                onTap: ()=>_onChatTap(chat,context),
               )
             ),
           ]
@@ -100,10 +102,10 @@ class _CreateChatViewState extends State<CreateChatView> {
       _searchingState = SearchingState.searching;
     });
     try{
-      var result = await UserRepository.search(value);
+      var result = await ChatRepository.search(value);
       setState(() {
-        users = result;
-        users.removeWhere((user) => user.id == widget.authInfo.user.id);
+        chats = result.users.map((e) => Chat(id: 0,name: e.login, type: 1, users: [e.id])).toList();
+        chats.removeWhere((chat) => chat.id == widget.authInfo.user.id);
         _searchingState = SearchingState.ready;
       });
     } on UnhandledRepositoryError {
@@ -121,8 +123,8 @@ class _CreateChatViewState extends State<CreateChatView> {
     return true;
   }
   
-  _onChatTap(User user,BuildContext context) {
-    final chatArgs = NewSingleChatArgs(authInfo: widget. authInfo, user: user);
+  _onChatTap(Chat chat,BuildContext context) {
+    final chatArgs = NewSingleChatArgs(authInfo: widget.authInfo, chat: chat);
     Navigator.of(context).pushReplacement(AppRoute.chat.route.build(chatArgs));
   }
 }

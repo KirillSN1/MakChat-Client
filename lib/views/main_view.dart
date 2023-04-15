@@ -40,10 +40,10 @@ class _MainViewState extends State<MainView> {
       body: Center(
         child: ListView(
           children: [
-            ChatCard(
-              chatName: "Временный чат",
-              onTap: ()=>_onChatTap(context,const Chat(name: "Временный чат",id:3)),
-            ),
+            // ChatCard(
+            //   chatName: "Временный чат",
+            //   onTap: ()=>_onChatTap(context,const Chat(name: "Временный чат",id:3)),
+            // ),
             for(final chat in chats)
               ChatCard(chat: chat, onTap: ()=>_onChatTap(context, chat))
           ],

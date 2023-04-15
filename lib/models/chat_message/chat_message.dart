@@ -9,15 +9,15 @@ class ChatMessage{
   int id;
   String text;
   DateTime dateTime;
-  final int authorId;
+  final int userId;
   MessageStatus status;
   bool changed;
-  ChatMessage(this.id, this.text, this.dateTime, this.authorId, this.status, this.changed);
-  factory ChatMessage.create(String text, int authorId){
+  ChatMessage(this.id, this.text, this.dateTime, this.userId, this.status, this.changed);
+  factory ChatMessage.create(String text, int userId){
     return ChatMessage(
       ChatMessage.defaultId, 
       text, DateTime.now(), 
-      authorId, 
+      userId,
       MessageStatus.sending,
       false
     );

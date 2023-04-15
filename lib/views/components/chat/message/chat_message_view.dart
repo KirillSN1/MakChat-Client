@@ -11,13 +11,13 @@ class ChatMessageView extends StatelessWidget {
   final ChatMessage message;
   final bool me;
   final ChatMessageStyle style;
-  final AuthInfo authInfo;
+  final int userId;
   ChatMessageView({
     super.key,
     required this.message,
-    required this.authInfo,
+    required this.userId,
     this.style = ChatMessageStyle.middle 
-  }):me = message.authorId == authInfo.user.id;
+  }):me = message.userId == userId;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

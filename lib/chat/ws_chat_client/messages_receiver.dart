@@ -5,7 +5,7 @@ import 'package:matcha/structs/json.dart';
 
 class MessageReceiver{
   final Event<Json?> _dataEvent;
-  final _controller = NamedEventsController<Json>(WSMessageType.values.map((e) => e.name));
+  final _controller = NamedEventsController<Json>(PunchType.values.map((e) => e.name));
   MessageReceiver(Event<Json?> dataEvent):_dataEvent = dataEvent{
     _dataEvent.addListener(_onData);
   }

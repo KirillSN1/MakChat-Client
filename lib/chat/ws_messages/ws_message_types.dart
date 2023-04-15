@@ -1,15 +1,15 @@
 import 'package:json_annotation/json_annotation.dart';
 
 @JsonEnum(valueField:"name")
-enum WSMessageType{
+enum PunchType{
   connection("connection"),
   chat("chat"),
   chatList("chatList"),
   unknown("");
   final String name;
-  const WSMessageType(this.name);
-  static WSMessageType fromString(String value){
-    return WSMessageType.values.firstWhere((e) => e.name == value,
-      orElse: ()=>WSMessageType.unknown);
+  const PunchType(this.name);
+  static PunchType fromString(String value){
+    return PunchType.values.firstWhere((e) => e.name == value,
+      orElse: ()=>PunchType.unknown);
   }
 }

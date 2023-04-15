@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat/chat.dart';
-import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/views/components/custom_back_button.dart';
 class ChatAppBar extends AppBar{
-  ChatAppBar({super.key, required AuthInfo authInfo, required Chat chat}):super(
+  ChatAppBar({super.key, required Chat? chat}):super(
     leading: const CustomBackButton(),
     automaticallyImplyLeading: true,
     title: Row(
@@ -12,7 +11,7 @@ class ChatAppBar extends AppBar{
         Padding(
           padding: const EdgeInsets.only(right: 10),
           child: Hero(
-            tag: "avatar_${(chat.id).toString()}",
+            tag: "avatar_${(chat?.id).toString()}",
             child: const CircleAvatar(
               radius: 23,
               backgroundColor: Colors.blue,
@@ -20,7 +19,7 @@ class ChatAppBar extends AppBar{
             ),
           ),
         ),
-        Text(chat.name)
+        Text(chat?.name??"...")
       ],
     )
   );

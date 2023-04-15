@@ -14,6 +14,9 @@ class Event<T>{
   void removeListener(EventListener<T> listener){
     _listeners.remove(listener);
   }
+  bool isListener(EventListener<T> listener){
+    return _listeners.contains(listener);
+  }
   invoke(T eventData){
     final listeners = [..._listeners];
     for (final listener in listeners) {
