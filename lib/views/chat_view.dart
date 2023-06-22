@@ -1,9 +1,6 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
-import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
-import 'package:matcha/env.dart';
 import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/messages_channel.dart';
