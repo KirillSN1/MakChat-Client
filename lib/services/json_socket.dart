@@ -8,15 +8,14 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../env.dart';
 
 class JsonSocket{
-  late final WebSocketChannel _channel;
+  late WebSocketChannel _channel;
   final onData = Event<Map<String,dynamic>>();
   final onError = NullableEvent();
   final onDone = NullableEvent();
-  JsonSocket(this._channel);
-  static Future<JsonSocket> connect() async {
+  JsonSocket.connect() { connect(); }
+  void connect(){
     final uri = Uri(scheme: Env.wsScheme, host: Env.host, port: Env.port);
-    final channel = WebSocketChannel.connect(uri);
-    return JsonSocket(channel);
+    _channel = WebSocketChannel.connect(uri);
   }
   void send(Map<String, dynamic> json){
     _channel.sink.add(jsonEncode(json));

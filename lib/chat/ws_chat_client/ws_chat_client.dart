@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
 import 'package:matcha/chat/ws_chat_client/messages_receiver.dart';
 import 'package:matcha/chat/ws_messages/client/ws_chat_request/chat_message_bullet.dart';
@@ -12,46 +13,48 @@ class WSClient{
   final JsonSocket _socket;
   final MessageReceiver receiver;
   final onAuth = NullableEvent<int>();
-  final onConnect = NullableEvent();
   final onDisconnect = NullableEvent<DisconnectReson>();
+  final onAuthError = NullableEvent();
   int _userId = 0;
-  bool _connected = false;
+  String _lastToken = "";
   int get userId=>_userId;
-  bool get authorized=>_connected && _userId>0;
-  bool get connected=>_connected;
+  bool get authorized=>_userId>0;
   Event<Json> get onData => _socket.onData;
 
   WSClient._(this._socket):receiver = MessageReceiver(_socket.onData){
     receiver.addListener(PunchType.connection.name, _updateAuthorization);
-    _socket.onDone.addListener(_onDone);
+    onAuth.addListener(_onAuth);
     _socket.listen();
-    _connected = true;
-    onConnect.invoke();
   }
-  static Future<WSClient> connect() async {
-    return WSClient._(await JsonSocket.connect());
+  static WSClient connect() {
+    return WSClient._(JsonSocket.connect());
   }
-  ///Возвращает userId, в случае успеха
-  Future<int> auth(String token) async {
-    final completer = Completer<int>();
-    if(_connected){
-      final message = WSConnectRequest(token:token);
-      receiver.addListener(once:true,PunchType.connection.name, (message) {
-        _updateAuthorization(message);
-        completer.complete(_userId);
-      });
-      _socket.send(message.toJson());
-    } else{
-      onConnect.addListener(once: true, (_) async =>{ completer.complete(await auth(token)) });
+  Future<int> auth([String? token]) async {
+    var completer = Completer<int>();
+    _lastToken = token = token ?? _lastToken;
+    final message = WSConnectRequest(token:token);
+    authCallback(Json message) {
+      if(completer.isCompleted) return;
+      _updateAuthorization(message);
+      completer.complete(_userId);
     }
+    closeCallback(_){
+      if(completer.isCompleted) return;
+      completer.completeError(Exception("Soket closed."));
+    }
+    receiver.addListener(once: true, PunchType.connection.name, authCallback);
+    _socket.onDone.addListener(once: true, closeCallback);
+    _socket.send(message.toJson());
     return completer.future;
   }
   Future disconnect() async {
+    if(_socket.closeCode == null) _socket.close();
+    _userId = 0;
+  }
+  dispose(){
     receiver.dispose();
     _socket.onDone.removeListener(_onDone);
-    if(_socket.closeCode == null) await _socket.close();
-    _userId = 0;
-    _connected = false;
+    disconnect();
   }
   Future disconnectAndNotify() async {
     await disconnect();
@@ -79,7 +82,22 @@ class WSClient{
       disconnectAndNotify();
     }
   }
+  Future<int> reconnect() async {
+    log("WSClient: try reconnect...");
+    try{
+      _socket..connect()..listen();
+      return await auth();
+    } catch (e){
+      return reconnect();
+    }
+  }
+  void _onAuth(int? eventData) {
+    log(authorized?"authorized":"authorization rejected");
+    if(!authorized) onAuthError.invoke();
+    _socket.onDone.addListener(_onDone,once: true);
+  }
   void _onDone(eventData) {
+    log("done");
     disconnectAndNotify();
   }
 }

@@ -5,7 +5,7 @@ class Event<T>{
     if(once){
       var original = listener;
       listener = (T t){
-        removeListener(original);
+        removeListener(listener);
         original.call(t);
       };
     }

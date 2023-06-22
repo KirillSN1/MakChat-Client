@@ -11,6 +11,7 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
       json['text'] as String,
       DateTime.parse(json['dateTime'] as String),
       json['userId'] as int,
+      json['chatId'] as int,
       $enumDecode(_$MessageStatusEnumMap, json['status']),
       json['changed'] as bool,
     );
@@ -21,6 +22,7 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
       'text': instance.text,
       'dateTime': instance.dateTime.toIso8601String(),
       'userId': instance.userId,
+      'chatId': instance.chatId,
       'status': _$MessageStatusEnumMap[instance.status]!,
       'changed': instance.changed,
     };

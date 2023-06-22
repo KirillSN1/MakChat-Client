@@ -27,10 +27,10 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() {
       _errorMessage = "";
     });
-    Auth.signedIn().then((value) async {
+    Auth.signedIn().then((value) {
       Route route;
       if(value != null){
-        final client = await GetIt.instance.getAsync<WSClient>();
+        final client = GetIt.instance.get<WSClient>();
         client.auth(value.token);
         final args = MainArguments(value);
         route = AppRoute.main.route.build(args);

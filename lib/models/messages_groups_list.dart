@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:matcha/low/date_time_ext.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
@@ -22,7 +24,7 @@ class MessagesGrouper{
   List<MessagesGroup>  get groups=>_groups;
   List<ChatMessage> get messages {
     var messagesLists = _groups.map((g)=>g.messages);
-    // if(messagesLists)
+    if(messagesLists.isEmpty) return [];
     return messagesLists.reduce((value, element) => value+element);
   }
   MessagesGrouper([List<ChatMessage>? messages]){
@@ -35,58 +37,54 @@ class MessagesGrouper{
   add(ChatMessage message){
     MessagesGroup? availableGroup;
     //сообщения в статусе "отправка", которые нужно опустить вниз
-    List<ChatMessage> messagesOnSending = [];
+    // List<ChatMessage> messagesOnSending = [];
     if(groups.isNotEmpty){
       for(var i = groups.length-1; i>=0; i--){
         final group = groups[i];
         //если попадается группа сообщений того же автора - группа найдена и
         //других действий не требуется
-        if(group.match(message)) {
+        if(group.matchByTime(message)) {
+          if(group.userId != message.userId) break;
           availableGroup = group;
           break;
-        }
-        //если нет, то необходимо проверить есть ли у нас сообщения в статусе 
-        //"отправка" и собрать их.
-        if(i<groups.length-1 && messagesOnSending.isNotEmpty) break;
-        final messagesOnSendingInGroup = group.messages.where(
-          (element) => element.status == MessageStatus.sending
-        );
-        if(messagesOnSendingInGroup.isEmpty) break;
-        //если группа состоит только из сообщенй в статусе "отпрака",
-        //группу нужно удалить, а сообщения опустить вниз после 
-        //добавления нового сообщения
-        if(messagesOnSendingInGroup.length == group.messages.length){
-          groups.remove(group);
-          messagesOnSending.addAll(messagesOnSendingInGroup);
-        }
-        else {
-          //если в группе есть сообщения "отправка" их таже нужно опустить вниз
-          for (final element in messagesOnSendingInGroup) {
-            group.messages.remove(element);
-            messagesOnSending.add(element);
-          }
         }
       }
     }
     //добавляем сообщение и группу для него, если не нашлось подходящей
     if(availableGroup == null){
       availableGroup = MessagesGroup(message.userId, message.dateTime,[message]);
-      groups.add(availableGroup);
+      final position = _getGroupPositionOnTimeline(availableGroup);
+      if(position>=0) {
+        groups.insert(position, availableGroup);
+      } else {
+        groups.add(availableGroup);
+      }
     }
     else {
       availableGroup.messages.add(message);
     }
-    if(messagesOnSending.isNotEmpty){
-      //добавляем группу для сообщений в статусе "отправки"
-      final userId = messagesOnSending[0].userId;
-      availableGroup = MessagesGroup(userId, DateTime.now(),messagesOnSending);
-      groups.add(availableGroup);
-    }
+  }
+  int _getGroupPositionOnTimeline(MessagesGroup group){
+    return groups.indexWhere(
+      (element) => 
+        element.dateTime.millisecondsSinceEpoch > group.dateTime.millisecondsSinceEpoch
+    );
   }
   bool removeMessage(ChatMessage message){
     for(var i = groups.length-1;i>=0;i--){
       final group = groups[i];
       if(group.messages.remove(message)) return true;
+    }
+    return false;
+  }
+  replace(ChatMessage from, ChatMessage to){
+    for(var i = groups.length-1;i>=0;i--){
+      final group = groups[i];
+      final messageIndex = group.messages.indexOf(from);
+      if(messageIndex>=0) {
+        group.messages.replaceRange(messageIndex, messageIndex + 1, [to]);
+        return true;
+      }
     }
     return false;
   }
@@ -98,7 +96,7 @@ class MessagesGroup{
   List<ChatMessage> messages;
   MessagesGroup(this.userId, DateTime dateTime, [this.messages = const []])
     :dateTime = dateTime.roundDown(dateTimeRound);
-  match(ChatMessage message){
-    return message.userId==userId && message.dateTime.roundDown(dateTimeRound) == dateTime;
+  matchByTime(ChatMessage message){
+    return message.dateTime.roundDown(dateTimeRound) == dateTime;
   }
 }

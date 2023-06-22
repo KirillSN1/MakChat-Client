@@ -6,7 +6,8 @@ class ChatAppBar extends AppBar{
     leading: const CustomBackButton(),
     automaticallyImplyLeading: true,
     title: Row(
-      mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
+
       children: [
         Padding(
           padding: const EdgeInsets.only(right: 10),
@@ -19,7 +20,7 @@ class ChatAppBar extends AppBar{
             ),
           ),
         ),
-        Text(chat?.name??"...")
+        Expanded(child: Text(chat?.name??"...",overflow: TextOverflow.ellipsis))
       ],
     )
   );

@@ -10,6 +10,7 @@ ChatMessagePunch _$ChatMessagePunchFromJson(Map<String, dynamic> json) =>
     ChatMessagePunch._(
       json['id'] as int,
       json['userId'] as int,
+      json['chatId'] as int,
       ChatMessagePunch._numberFromString(json['created_at']),
       ChatMessagePunch._numberFromString(json['updated_at']),
       json['text'] as String,
@@ -21,6 +22,7 @@ Map<String, dynamic> _$ChatMessagePunchToJson(ChatMessagePunch instance) =>
     <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
+      'chatId': instance.chatId,
       'status': instance.status,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,

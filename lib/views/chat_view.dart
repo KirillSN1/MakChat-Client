@@ -1,12 +1,15 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:matcha/chat/ws_chat_client/disconnect_reson.dart';
 import 'package:matcha/env.dart';
 import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/messages_channel.dart';
+import 'package:matcha/models/messages_groups_list.dart';
 import 'package:matcha/routes/args/chat_args.dart';
+import 'package:matcha/services/locator.dart';
 import 'package:matcha/services/repositories/chat_repository.dart';
 import 'package:matcha/views/components/chat/chat_app_bar.dart';
 import 'package:matcha/views/components/chat/chat_text_field.dart';
@@ -31,6 +34,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   String errorMessage = "";
   Map<ChatMessage,AnimationController> messageAnimationControllers = {};
   Chat? chat;
+  final MessagesGrouper _messagesGrouper = MessagesGrouper();
 
   @override
   initState() {
@@ -55,9 +59,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
                 controller: _scrollController,
                 shrinkWrap: true,
                 children:[
-                  for(final messageGroup in _messagesChannel.messagesGroups)
+                  for(final messageGroup in _messagesGrouper.groups)
                     Padding(
-                      padding: const EdgeInsets.only(right: 3, bottom: 6),
+                      padding: const EdgeInsets.only(left: 3, right: 3, bottom: 6),
                       child: DefaultMessagesGroupView(
                         userId: widget.args.authInfo.user.id, 
                         messageAnimationControllers: messageAnimationControllers, 
@@ -84,11 +88,11 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     log("chat_view connect");
     chat = await _createSingleChat() ?? widget.args.chat;
     if(chat!.id == 0) errorMessage = "Ошибка создания чата.";
-    _messagesChannel = await MessagesChannel.create()..listen();
-    _messagesChannel.onDisconnect.addListener(_onDisconnect);
+    _messagesChannel = Locator.messagesChannel;
+    _messagesChannel.onAuthError.addListener(_onAuthError);
     _messagesChannel.onSended.addListener(_onSended);
     _messagesChannel.onReceived.addListener(_onReceived);
-    _messagesChannel.onReceivedChanged.addListener(_onReceivedChanged);
+    _messagesChannel.listen();
     setState(() { _state = ChatViewState.loaded; });
   }
   Future<Chat?> _createSingleChat() async {
@@ -96,38 +100,33 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     if(args is! NewSingleChatArgs) return null;
     return ChatRepository.create(args.authInfo, args.chat.users);
   }
-  void _onSended(ChatMessage eventData) {
+  void _onSended(SendedMessageEventData eventData) {
+    _messagesGrouper.replace(eventData.sended, eventData.recirved);
     setState(() {});
   }
-  void _onReceived(ChatMessage eventData) {
+  void _onReceived(ChatMessage message) {
+    if(message.chatId != widget.args.chat.id) return;
+    final messages = _messagesGrouper.messages;
+    final chatMessageIndex = messages.indexWhere((m)=>m.id==message.id);
+    if(chatMessageIndex>=0) {//если мне прилетело уже существующее сообщение
+      _messagesGrouper.replace(messages[chatMessageIndex], message);
+      return setState(() {});
+    } else {
+      _messagesGrouper.add(message);
+    }
     setState(() {
-      _animateMessageExpanding(eventData);
+      _animateMessageExpanding(message);
     });
   }
-  void _onReceivedChanged(ChatMessage eventData) {
-    setState(() {});
-  }
-  void _onDisconnect(DisconnectReson? reson){
-    if(reson == null || reson.code == DisconnectReson.normal) return;
-    errorMessage = "Ошибка:";
-    switch(reson.code){
-      case(DisconnectReson.authError):
-        errorMessage += "вы не авторизованы.";
-        break;
-      case(DisconnectReson.argumentsError):
-        errorMessage += "неизвестный чат.";
-        break;
-      default:
-        errorMessage += "${reson.code}";
-        if(Env.debug) errorMessage += reson.message;
-        break;
-    }
+  void _onAuthError(_){
+    errorMessage = "Ошибка авторизации.";
     setState(() { _state = ChatViewState.errored; });
   }
   _sendMessage(String text) async {
     if(chat == null) throw Exception("chat must not be null");
     setState((){
       ChatMessage message = _messagesChannel.send(chat!.id, text);
+      _messagesGrouper.add(message);
       _animateMessageExpanding(message);
     });
   }
@@ -147,10 +146,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   @override
   dispose(){
     _messagesChannel.stopListening();
-    _messagesChannel.onDisconnect.removeListener(_onDisconnect);
+    _messagesChannel.onDisconnect.removeListener(_onAuthError);
     _messagesChannel.onSended.removeListener(_onSended);
     _messagesChannel.onReceived.removeListener(_onReceived);
-    _messagesChannel.onReceivedChanged.removeListener(_onReceivedChanged);
     super.dispose();
   }
 }

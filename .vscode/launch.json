@@ -16,14 +16,29 @@
             "type": "dart",
             "toolArgs": [
                 "--dart-define", "DEBUG=true",
-                "--dart-define", "LOCAL=true"
+                "--dart-define", "LOCAL=true",
+                "--dart-define", "REMOTE_ADDR_CP=192.168.0.107"
             ]
         },
         {
-            "name": "client (profile mode)",
+            "name": "local client (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "toolArgs": [
+                "--dart-define", "LOCAL=true",
+                "--dart-define", "REMOTE_ADDR_CP=192.168.0.106"
+            ]
+        },
+        {
+            "name": "local client (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define", "LOCAL=true",
+                // "--dart-define", "REMOTE_ADDR_CP=192.168.0.106"
+            ]
         },
         {
             "name": "client (release mode)",

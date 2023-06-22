@@ -11,6 +11,5 @@ class SingleChatArgs extends ChatArgs {
   SingleChatArgs({ required super.authInfo, required super.chat});
 }
 class NewSingleChatArgs extends ChatArgs{
-  NewSingleChatArgs({ required super.authInfo, required Chat chat })
-    :super(chat: Chat(id: 0, name: chat.name));
+  NewSingleChatArgs({ required super.authInfo, required super.chat });
 }

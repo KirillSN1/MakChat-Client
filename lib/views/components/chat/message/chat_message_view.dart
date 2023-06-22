@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
-import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/views/components/chat/message/chat_message_tail.dart';
 
 import 'chat_message_style_enum.dart';
@@ -34,53 +33,56 @@ class ChatMessageView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: me?CrossAxisAlignment.end:CrossAxisAlignment.start,
         children: [
-          IntrinsicHeight(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: me?MainAxisAlignment.end:MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if(!me)  _getMessageTail(messageDecoration.color, me, isLast),
-                Flexible(
-                  child: DecoratedBox(
-                    decoration: messageDecoration,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Text(message.text,
-                                softWrap: true,
+          FractionallySizedBox(
+            widthFactor: 0.9,
+            child: IntrinsicHeight(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: me?MainAxisAlignment.end:MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if(!me)  _getMessageTail(messageDecoration.color, me, isLast),
+                  Flexible(
+                    child: DecoratedBox(
+                      decoration: messageDecoration,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(message.text,
+                                  softWrap: true,
+                                ),
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Row(
-                              children: [
-                                Text(time, style: theme.textTheme.bodySmall),
-                                if(me)
-                                SizedBox(
-                                  height: 16,
-                                  child: FittedBox(
-                                    child: getStatusWidget(),
-                                  ),
-                                )
-                              ],
-                            ),
-                          )
-                        ],
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: Row(
+                                children: [
+                                  Text(time, style: theme.textTheme.bodySmall),
+                                  if(me)
+                                  SizedBox(
+                                    height: 16,
+                                    child: FittedBox(
+                                      child: getStatusWidget(),
+                                    ),
+                                  )
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if(me) _getMessageTail(messageDecoration.color, me, isLast)
-              ],
+                  if(me) _getMessageTail(messageDecoration.color, me, isLast)
+                ],
+              ),
             ),
           ),
         ],

@@ -187,9 +187,9 @@ class _LoginViewState extends State<LoginView> {
       _showSnackMessage(context, "Ошибка${Env.debug?":$error":""}.");
     }
   }
-  void _onLogined(AuthInfo authInfo) async {
+  void _onLogined(AuthInfo authInfo) {
     final args = MainArguments(authInfo);
-    final client = await GetIt.instance.getAsync<WSClient>();
+    final client = GetIt.instance.get<WSClient>();
     client.auth(authInfo.token);
     Navigator.of(context).push(AppRoute.main.route.build(args));
   }

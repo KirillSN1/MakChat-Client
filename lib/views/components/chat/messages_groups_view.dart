@@ -19,7 +19,7 @@ class _MessagesGroupViewState extends State<MessagesGroupView> {
       mainAxisAlignment: me?MainAxisAlignment.end:MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if(!me) _buildAvatarColumn(),
+        // if(!me) _buildAvatarColumn(),//TODO:Показывать аватар только в групповых чатах.
         Flexible(
           child: Column(
             mainAxisSize: MainAxisSize.min,
