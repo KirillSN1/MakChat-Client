@@ -102,10 +102,9 @@ class _CreateChatViewState extends State<CreateChatView> {
       _searchingState = SearchingState.searching;
     });
     try{
-      var result = await ChatRepository.search(value);
+      var result = await ChatRepository.search(widget.authInfo,value);
       setState(() {
         chats = result.users.map((e) => Chat(id: 0,name: e.login, type: 1, users: [e.id])).toList();
-        chats.removeWhere((chat) => chat.id == widget.authInfo.user.id);
         _searchingState = SearchingState.ready;
       });
     } on UnhandledRepositoryError {

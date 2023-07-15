@@ -27,7 +27,7 @@
             "flutterMode": "profile",
             "toolArgs": [
                 "--dart-define", "LOCAL=true",
-                "--dart-define", "REMOTE_ADDR_CP=192.168.0.106"
+                "--dart-define", "REMOTE_ADDR_CP=192.168.0.107"
             ]
         },
         {
@@ -37,7 +37,7 @@
             "flutterMode": "release",
             "toolArgs": [
                 "--dart-define", "LOCAL=true",
-                // "--dart-define", "REMOTE_ADDR_CP=192.168.0.106"
+                "--dart-define", "REMOTE_ADDR_CP=192.168.0.107"
             ]
         },
         {

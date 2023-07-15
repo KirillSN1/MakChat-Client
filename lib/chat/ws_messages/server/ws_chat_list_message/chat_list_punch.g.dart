@@ -8,12 +8,10 @@ part of 'chat_list_punch.dart';
 
 ChatListPunch _$ChatListPunchFromJson(Map<String, dynamic> json) =>
     ChatListPunch(
-      (json['chats'] as List<dynamic>)
-          .map((e) => Chat.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      ChatListPunchData.fromJson(json['data']),
     );
 
 Map<String, dynamic> _$ChatListPunchToJson(ChatListPunch instance) =>
     <String, dynamic>{
-      'chats': instance.chats,
+      'data': instance.data,
     };

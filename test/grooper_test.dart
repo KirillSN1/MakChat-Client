@@ -1,9 +1,7 @@
-import 'dart:developer';
-
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:test/test.dart';
-import 'package:matcha/models/messages_groups_list.dart';
+import 'package:matcha/models/messages_grouper.dart';
 
 void main() {
   test('Group matches message correctly.',(){

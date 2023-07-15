@@ -58,10 +58,10 @@ class ChatRepository{
     final chatsList = jsonDecode(response.body) as List;
     return chatsList.map((e) => Chat.fromJson(e));
   }
-  static Future<ChatsSearchResult> search(String value) async {    
+  static Future<ChatsSearchResult> search(AuthInfo authInfo, String value) async {    
     var response = await http.get(BaseUri.getWith(
       path: "/Api/findChats", 
-      queryParameters: { "search":value })
+      queryParameters: { "token":authInfo.token, "search":value })
     );
     var body = response.body;
     switch(response.statusCode){
@@ -69,6 +69,5 @@ class ChatRepository{
       default:throw UnhandledRepositoryError(response.body);
     }
     return ChatsSearchResult.fromJson(jsonDecode(body));
-    // return users.map((e) => Chat.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/routes/app_route_enum.dart';
+import 'package:matcha/services/locator.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/views/components/user_status_view.dart';
 

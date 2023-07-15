@@ -1,24 +1,6 @@
-import 'dart:developer';
-
 import 'package:matcha/low/date_time_ext.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
-import 'package:matcha/models/message_status.dart';
 
-// typedef _MessagesGroup = List<ChatMessage>;
-// class MessagesGroupKey extends Equatable {
-//   final int authorId;//автор
-//   final int dateTime;//время с точностью до минуты
-//   const MessagesGroupKey._(this.authorId, this.dateTime);
-//   factory MessagesGroupKey.from(int authorId, DateTime dateTime, {Duration dateTimeRound = const Duration(seconds: Duration.secondsPerMinute)}){
-//     final ms = dateTime.roundDown(dateTimeRound).millisecondsSinceEpoch;
-//     return MessagesGroupKey._(authorId,ms);
-//   }
-//   factory MessagesGroupKey.fromMessage(ChatMessage message, {Duration dateTimeRound = const Duration(seconds: Duration.secondsPerMinute)}){
-//     return MessagesGroupKey.from(message.authorId, message.dateTime, dateTimeRound: dateTimeRound);
-//   }
-//   @override
-//   List<Object?> get props => [authorId,dateTime];
-// }
 class MessagesGrouper{
   final List<MessagesGroup> _groups = [];
   List<MessagesGroup>  get groups=>_groups;
@@ -27,17 +9,20 @@ class MessagesGrouper{
     if(messagesLists.isEmpty) return [];
     return messagesLists.reduce((value, element) => value+element);
   }
-  MessagesGrouper([List<ChatMessage>? messages]){
+  MessagesGrouper([Iterable<ChatMessage>? messages]){
+    addAll(messages);
+  }
+  void addAll([Iterable<ChatMessage>? messages]){
     if(messages != null){
       for(final message in messages) {
         add(message);
       }
     }
   }
-  add(ChatMessage message){
+  void add(ChatMessage message){
     MessagesGroup? availableGroup;
     //сообщения в статусе "отправка", которые нужно опустить вниз
-    // List<ChatMessage> messagesOnSending = [];
+    // List<GrouperMessage> messagesOnSending = [];
     if(groups.isNotEmpty){
       for(var i = groups.length-1; i>=0; i--){
         final group = groups[i];

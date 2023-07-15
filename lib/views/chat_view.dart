@@ -1,13 +1,13 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/messages_channel.dart';
-import 'package:matcha/models/messages_groups_list.dart';
+import 'package:matcha/models/messages_grouper.dart';
 import 'package:matcha/routes/args/chat_args.dart';
 import 'package:matcha/services/locator.dart';
 import 'package:matcha/services/repositories/chat_repository.dart';
+import 'package:matcha/services/repositories/messages_repository.dart';
 import 'package:matcha/views/components/chat/chat_app_bar.dart';
 import 'package:matcha/views/components/chat/chat_text_field.dart';
 import 'package:matcha/views/components/chat/default_message_group_view.dart';
@@ -32,12 +32,14 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   Map<ChatMessage,AnimationController> messageAnimationControllers = {};
   Chat? chat;
   final MessagesGrouper _messagesGrouper = MessagesGrouper();
+  
+  int lastSendingIndex = ChatMessage.defaultId;
 
   @override
   initState() {
     _state = ChatViewState.loading;
     super.initState();
-    _connect();
+    _init();
   }
   
   @override
@@ -47,7 +49,6 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if(_state == ChatViewState.loaded)
           Expanded(
             child: Container(
               constraints: const BoxConstraints(maxHeight: double.infinity),
@@ -81,10 +82,11 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
       ),
     );
   }
-  Future _connect() async {
-    log("chat_view connect");
+  Future _init() async {
+    log("chat_view init");
     chat = await _createSingleChat() ?? widget.args.chat;
     if(chat!.id == 0) errorMessage = "Ошибка создания чата.";
+    _messagesGrouper.addAll(await MessagesRepository.getMessagesHystory(widget.args.authInfo, chat!.id));
     _messagesChannel = Locator.messagesChannel;
     _messagesChannel.onAuthError.addListener(_onAuthError);
     _messagesChannel.onSended.addListener(_onSended);
@@ -98,20 +100,20 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     return ChatRepository.create(args.authInfo, args.chat.users);
   }
   void _onSended(SendedMessageEventData eventData) {
-    _messagesGrouper.replace(eventData.sended, eventData.recirved);
-    setState(() {});
+    setState(() {
+      _messagesGrouper.replace(eventData.sended, eventData.recirved);
+    });
   }
   void _onReceived(ChatMessage message) {
     if(message.chatId != widget.args.chat.id) return;
     final messages = _messagesGrouper.messages;
     final chatMessageIndex = messages.indexWhere((m)=>m.id==message.id);
-    if(chatMessageIndex>=0) {//если мне прилетело уже существующее сообщение
-      _messagesGrouper.replace(messages[chatMessageIndex], message);
-      return setState(() {});
-    } else {
-      _messagesGrouper.add(message);
-    }
     setState(() {
+      if(chatMessageIndex>=0) {//если мне прилетело уже существующее сообщение
+        _messagesGrouper.replace(messages[chatMessageIndex], message);
+      } else {
+        _messagesGrouper.add(message);
+      }
       _animateMessageExpanding(message);
     });
   }
@@ -121,9 +123,9 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   }
   _sendMessage(String text) async {
     if(chat == null) throw Exception("chat must not be null");
+    ChatMessage message = _messagesChannel.send(chat!.id, text);
+    _messagesGrouper.add(message);
     setState((){
-      ChatMessage message = _messagesChannel.send(chat!.id, text);
-      _messagesGrouper.add(message);
       _animateMessageExpanding(message);
     });
   }
@@ -146,6 +148,7 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
     _messagesChannel.onDisconnect.removeListener(_onAuthError);
     _messagesChannel.onSended.removeListener(_onSended);
     _messagesChannel.onReceived.removeListener(_onReceived);
+    messageAnimationControllers.forEach((key, value) =>value.stop());
     super.dispose();
   }
 }

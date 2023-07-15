@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:matcha/env.dart';
 
 class DefaultAppBar extends AppBar{
-  final bool loading;
-  DefaultAppBar({super.key, this.loading = false }):super(
+  final String? info;
+  DefaultAppBar({super.key, this.info = "" }):super(
     automaticallyImplyLeading: true,
     title: Row(children: [
       const Text(Env.appTitile),
-      if(loading) const CircularProgressIndicator()
+      if(info != null) Text(" - $info"),
     ],)
   );
 }

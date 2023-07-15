@@ -35,15 +35,12 @@ class ChatCard extends StatelessWidget{
           padding: const EdgeInsets.all(6.0),
           child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                child: Hero(
-                  tag: "avatar_${chat?.id??key.hashCode}",
-                  child: const CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.blue,
-                    child: Icon(Icons.bookmark_outline_rounded, color: Colors.white,),
-                  ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 3.0),
+                child: CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.blue,
+                  child: Icon(Icons.bookmark_outline_rounded, color: Colors.white,),
                 ),
               ),
               Padding(
