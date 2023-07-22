@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:matcha/views/components/chat/message/chat_message_tail.dart';
-
 import 'chat_message_style_enum.dart';
 
 class ChatMessageView extends StatelessWidget {
@@ -16,11 +15,11 @@ class ChatMessageView extends StatelessWidget {
     required this.message,
     required this.userId,
     this.style = ChatMessageStyle.middle 
-  }):me = message.userId == userId;
+  }):me = message.data.userId == userId;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final time = DateFormat(DateFormat.HOUR24_MINUTE).format(message.dateTime);
+    final time = DateFormat(DateFormat.HOUR24_MINUTE).format(message.data.dateTime);
     var padding = 3.0;
     final isLast = style == ChatMessageStyle.single || style == ChatMessageStyle.end;
     if(isLast) padding = 0;
@@ -55,7 +54,7 @@ class ChatMessageView extends StatelessWidget {
                             Flexible(
                               child: Padding(
                                 padding: const EdgeInsets.all(6.0),
-                                child: Text(message.text,
+                                child: Text(message.data.text,
                                   softWrap: true,
                                 ),
                               ),
@@ -93,7 +92,7 @@ class ChatMessageView extends StatelessWidget {
     return ChatMessageTail(color: color,show: show, mirror: !me);
   }
   Widget getStatusWidget() {
-    switch(message.status){
+    switch(message.data.status){
       case MessageStatus.sending: return  const CircularProgressIndicator();
       case MessageStatus.sended: return const Icon(Icons.done_rounded);
       case MessageStatus.readed: return const Icon(Icons.done_all_rounded);

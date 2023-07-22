@@ -9,6 +9,7 @@ part of 'chat_message_punch.dart';
 ChatMessagePunch _$ChatMessagePunchFromJson(Map<String, dynamic> json) =>
     ChatMessagePunch._(
       json['id'] as int,
+      json['tempId'] as int,
       json['userId'] as int,
       json['chatId'] as int,
       ChatMessagePunch._numberFromString(json['created_at']),
@@ -21,6 +22,7 @@ ChatMessagePunch _$ChatMessagePunchFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ChatMessagePunchToJson(ChatMessagePunch instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'tempId': instance.tempId,
       'userId': instance.userId,
       'chatId': instance.chatId,
       'status': instance.status,

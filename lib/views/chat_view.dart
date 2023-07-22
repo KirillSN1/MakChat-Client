@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/models/messages_channel.dart';
 import 'package:matcha/models/messages_grouper.dart';
 import 'package:matcha/routes/args/chat_args.dart';
@@ -32,8 +33,6 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   Map<ChatMessage,AnimationController> messageAnimationControllers = {};
   Chat? chat;
   final MessagesGrouper _messagesGrouper = MessagesGrouper();
-  
-  int lastSendingIndex = ChatMessage.defaultId;
 
   @override
   initState() {
@@ -53,20 +52,21 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
             child: Container(
               constraints: const BoxConstraints(maxHeight: double.infinity),
               alignment: Alignment.bottomCenter,
-              child: ListView(
+              child: SingleChildScrollView(//TODO:ленивая загрузка сообщений
                 controller: _scrollController,
-                shrinkWrap: true,
-                children:[
-                  for(final messageGroup in _messagesGrouper.groups)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 3, right: 3, bottom: 6),
-                      child: DefaultMessagesGroupView(
-                        userId: widget.args.authInfo.user.id, 
-                        messageAnimationControllers: messageAnimationControllers, 
-                        messages: messageGroup.messages,
-                      ),
-                    )
-                ]
+                child:Column(
+                  children:[
+                    for(final messageGroup in _messagesGrouper.groups)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 3, right: 3, bottom: 6),
+                        child: DefaultMessagesGroupView(
+                          userId: widget.args.authInfo.user.id, 
+                          messageAnimationControllers: messageAnimationControllers, 
+                          messages: messageGroup.messages,
+                        ),
+                      )
+                  ]
+                )
               ),
             ),
           ),
@@ -85,36 +85,39 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   Future _init() async {
     log("chat_view init");
     chat = await _createSingleChat() ?? widget.args.chat;
-    if(chat!.id == 0) errorMessage = "Ошибка создания чата.";
-    _messagesGrouper.addAll(await MessagesRepository.getMessagesHystory(widget.args.authInfo, chat!.id));
+    if(chat == null || chat!.id == 0) errorMessage = "Ошибка создания чата.";
+    _messagesGrouper.addAll(await _loadHistory(chat!.id));
     _messagesChannel = Locator.messagesChannel;
     _messagesChannel.onAuthError.addListener(_onAuthError);
-    _messagesChannel.onSended.addListener(_onSended);
     _messagesChannel.onReceived.addListener(_onReceived);
     _messagesChannel.listen();
-    setState(() { _state = ChatViewState.loaded; });
+    setState(() {
+      _state = ChatViewState.loaded;
+      jumpEndOnPostFrame();
+    });
+  }
+  Future<Iterable<ChatMessage>> _loadHistory(int chatId) async {
+    final authInfo = widget.args.authInfo;
+    final messagesData = await MessagesRepository.getMessagesHystory(authInfo, chatId);
+    return messagesData.map((data) => ChatMessage(_messagesGrouper.messagesCount, data));
   }
   Future<Chat?> _createSingleChat() async {
     final args = widget.args;
     if(args is! NewSingleChatArgs) return null;
     return ChatRepository.create(args.authInfo, args.chat.users);
   }
-  void _onSended(SendedMessageEventData eventData) {
-    setState(() {
-      _messagesGrouper.replace(eventData.sended, eventData.recirved);
-    });
-  }
-  void _onReceived(ChatMessage message) {
-    if(message.chatId != widget.args.chat.id) return;
+  void _onReceived(ChatMessageData messageData) {
+    if(messageData.chatId != widget.args.chat.id) return;
     final messages = _messagesGrouper.messages;
-    final chatMessageIndex = messages.indexWhere((m)=>m.id==message.id);
+    final chatMessageIndex = messages.indexWhere((m)=>m.id==messageData.id);
     setState(() {
       if(chatMessageIndex>=0) {//если мне прилетело уже существующее сообщение
-        _messagesGrouper.replace(messages[chatMessageIndex], message);
+        messages[chatMessageIndex].data = messageData;
       } else {
+        final message = ChatMessage(_messagesGrouper.messagesCount, messageData);
         _messagesGrouper.add(message);
+        _animateMessageExpanding(message);
       }
-      _animateMessageExpanding(message);
     });
   }
   void _onAuthError(_){
@@ -123,30 +126,38 @@ class _ChatViewState extends State<ChatView> with TickerProviderStateMixin {
   }
   _sendMessage(String text) async {
     if(chat == null) throw Exception("chat must not be null");
-    ChatMessage message = _messagesChannel.send(chat!.id, text);
+    final sendingState = _messagesChannel.send(chat!.id, text);
+    final message = ChatMessage(_messagesGrouper.messagesCount, sendingState.sendedData);
     _messagesGrouper.add(message);
     setState((){
       _animateMessageExpanding(message);
     });
+    sendingState.sendingResult.then((value) => setState((){
+      message.data = value;
+    }));
   }
   Future _animateMessageExpanding(ChatMessage message) async {
     final controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    jumpEnd()=>_scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-    controller.addListener(jumpEnd);
+    controller.addListener(jumpEndOnPostFrame);
     messageAnimationControllers[message] = controller;
     await controller.forward();
-    controller.removeListener(jumpEnd);
+    controller.removeListener(jumpEndOnPostFrame);
     messageAnimationControllers.remove(message);
   }
-  
+  jumpEndOnPostFrame()=>WidgetsBinding.instance.addPostFrameCallback((_){
+    jumpEnd();
+  });
+  ///Проклучивает [ListView] до максимального значения [ScrollPosition.maxScrollExtent]
+  jumpEnd(){
+    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+  }
   @override
   dispose(){
     _messagesChannel.stopListening();
     _messagesChannel.onDisconnect.removeListener(_onAuthError);
-    _messagesChannel.onSended.removeListener(_onSended);
     _messagesChannel.onReceived.removeListener(_onReceived);
     messageAnimationControllers.forEach((key, value) =>value.stop());
     super.dispose();

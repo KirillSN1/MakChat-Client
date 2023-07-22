@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chat_message.dart';
+part of 'chat_message_data.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
+ChatMessageData _$ChatMessageDataFromJson(Map<String, dynamic> json) =>
+    ChatMessageData(
       json['id'] as int,
       json['text'] as String,
       DateTime.parse(json['dateTime'] as String),
@@ -16,7 +17,7 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
       json['changed'] as bool,
     );
 
-Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
+Map<String, dynamic> _$ChatMessageDataToJson(ChatMessageData instance) =>
     <String, dynamic>{
       'id': instance.id,
       'text': instance.text,

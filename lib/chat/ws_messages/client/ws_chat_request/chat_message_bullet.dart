@@ -11,19 +11,23 @@ class ChatMessageBullet extends Bullet{
   final int chatId;
   final String text;
   final int dateTime;
+  final int tempId;//id для ассоциации отправленного и полученного
   ///[dateTime] send or edit time (default is [DateTime.now])
   factory ChatMessageBullet({
     id = 0,
     chatId = 0,
     text = "",
+    required int tempId,
     required int dateTime
   })=>ChatMessageBullet._(
+    tempId: tempId,
     id: id,
     chatId: chatId,
     text: text,
     dateTime: dateTime
   );
   const ChatMessageBullet._({
+    required this.tempId,
     required this.id,
     required this.chatId,
     required this.text,

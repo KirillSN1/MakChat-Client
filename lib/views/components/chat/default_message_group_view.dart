@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'message/chat_message_expand_animation.dart';
 import 'message/chat_message_style_enum.dart';
 import 'message/chat_message_view.dart';
@@ -16,7 +17,7 @@ class DefaultMessagesGroupView extends MessagesGroupView{
     messages: messages,
     builder: (index) {
       final message = messages[index];
-      final me = userId == message.userId;
+      final me = userId == message.data.userId;
       var style = ChatMessageStyle.first;
       if(index>0) {
         style = index == messages.length-1

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:matcha/env.dart';
-import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/services/repositories/auth/auth_errors.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:http/http.dart' as http ;
@@ -12,7 +12,7 @@ import '../../chat/ws_messages/server/chat_message_punch/chat_message_punch.dart
 
 class MessagesRepository{
   
-  static Future<Iterable<ChatMessage>> getMessagesHystory(AuthInfo authInfo, int chatId) async {
+  static Future<Iterable<ChatMessageData>> getMessagesHystory(AuthInfo authInfo, int chatId) async {
     final url = BaseUri.getWith(path: "/Api/getMessagesHystory");
     final response = await http.post(url, body: { "token":authInfo.token, "chatId":chatId.toString() });
     final message = response.reasonPhrase?? response.body;

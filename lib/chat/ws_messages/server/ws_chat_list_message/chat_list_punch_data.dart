@@ -3,7 +3,6 @@ import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/structs/Json.dart';
 part 'chat_list_punch_data.g.dart';
 
-@JsonEnum(valueField: "value")
 enum ChatListPunchType{
   add,
   remove,

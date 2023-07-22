@@ -8,6 +8,7 @@ part of 'chat_message_bullet.dart';
 
 ChatMessageBullet _$ChatMessageBulletFromJson(Map<String, dynamic> json) =>
     ChatMessageBullet._(
+      tempId: json['tempId'] as int,
       id: json['id'] as int,
       chatId: json['chatId'] as int,
       text: json['text'] as String,
@@ -23,6 +24,7 @@ Map<String, dynamic> _$ChatMessageBulletToJson(ChatMessageBullet instance) =>
       'chatId': instance.chatId,
       'text': instance.text,
       'dateTime': instance.dateTime,
+      'tempId': instance.tempId,
     };
 
 const _$PunchTypeEnumMap = {

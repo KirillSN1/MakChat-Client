@@ -1,5 +1,5 @@
 import 'package:matcha/low/date_time_ext.dart';
-import 'package:matcha/models/chat_message/chat_message.dart';
+import 'chat_message/chat_message.dart';
 
 class MessagesGrouper{
   final List<MessagesGroup> _groups = [];
@@ -8,6 +8,11 @@ class MessagesGrouper{
     var messagesLists = _groups.map((g)=>g.messages);
     if(messagesLists.isEmpty) return [];
     return messagesLists.reduce((value, element) => value+element);
+  }
+  int get messagesCount {
+    int count = 0;
+    for (var group in _groups) { count += group.messages.length; }
+    return count;
   }
   MessagesGrouper([Iterable<ChatMessage>? messages]){
     addAll(messages);
@@ -29,7 +34,7 @@ class MessagesGrouper{
         //если попадается группа сообщений того же автора - группа найдена и
         //других действий не требуется
         if(group.matchByTime(message)) {
-          if(group.userId != message.userId) break;
+          if(group.userId != message.data.userId) break;
           availableGroup = group;
           break;
         }
@@ -37,7 +42,7 @@ class MessagesGrouper{
     }
     //добавляем сообщение и группу для него, если не нашлось подходящей
     if(availableGroup == null){
-      availableGroup = MessagesGroup(message.userId, message.dateTime,[message]);
+      availableGroup = MessagesGroup(message.data.userId, message.data.dateTime,[message]);
       final position = _getGroupPositionOnTimeline(availableGroup);
       if(position>=0) {
         groups.insert(position, availableGroup);
@@ -62,16 +67,13 @@ class MessagesGrouper{
     }
     return false;
   }
-  replace(ChatMessage from, ChatMessage to){
+  ChatMessage? firstWhere(bool Function(ChatMessage message) test){
     for(var i = groups.length-1;i>=0;i--){
-      final group = groups[i];
-      final messageIndex = group.messages.indexOf(from);
-      if(messageIndex>=0) {
-        group.messages.replaceRange(messageIndex, messageIndex + 1, [to]);
-        return true;
-      }
+      try{
+        return groups[i].messages.firstWhere(test);
+      } catch(e) { continue; }
     }
-    return false;
+    return null;
   }
 }
 class MessagesGroup{
@@ -82,6 +84,6 @@ class MessagesGroup{
   MessagesGroup(this.userId, DateTime dateTime, [this.messages = const []])
     :dateTime = dateTime.roundDown(dateTimeRound);
   matchByTime(ChatMessage message){
-    return message.dateTime.roundDown(dateTimeRound) == dateTime;
+    return message.data.dateTime.roundDown(dateTimeRound) == dateTime;
   }
 }

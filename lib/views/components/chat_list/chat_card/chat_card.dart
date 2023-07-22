@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat/chat.dart';
-import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/routes/app_route_enum.dart';
 import 'package:matcha/routes/args/chat_args.dart';
 import 'package:matcha/views/components/low/default_card.dart';
@@ -9,7 +9,7 @@ import '../../../../env.dart';
 class ChatCard extends StatelessWidget{
   final String? chatName;
   final Widget? avatar;
-  final ChatMessage? lastMessage;
+  final ChatMessageData? lastMessage;
   final Chat? chat;
   final void Function()? onTap;
   final bool isPeopleChat;

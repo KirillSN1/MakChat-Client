@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:matcha/models/chat_message/chat_message.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 
-class MessagesGroupView<T> extends StatefulWidget {
-  final List<T> messages;
+class MessagesGroupView extends StatefulWidget {
+  final List<ChatMessage> messages;
   final int userId;
   
   final Widget Function(int index) builder;
@@ -14,7 +15,7 @@ class MessagesGroupView<T> extends StatefulWidget {
 class _MessagesGroupViewState extends State<MessagesGroupView> {
   @override
   Widget build(BuildContext context) {
-    final me = widget.messages[0].userId == widget.userId;
+    final me = widget.messages[0].data.userId == widget.userId;
     return Row(
       mainAxisAlignment: me?MainAxisAlignment.end:MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,

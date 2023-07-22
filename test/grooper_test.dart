@@ -1,4 +1,4 @@
-import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:test/test.dart';
 import 'package:matcha/models/messages_grouper.dart';
@@ -14,7 +14,7 @@ void main() {
   });
   test('Messages sorts by different groups.', () {
     final grooper = MessagesGrouper();
-    final createdMessages = <ChatMessage>[];
+    final createdMessages = <ChatMessageData>[];
     const groupsCount = 3;
     const messagesInGroupCount = 2;
     for(int messageIndex = 1; messageIndex<=messagesInGroupCount; messageIndex++){
@@ -33,19 +33,19 @@ void main() {
   });
   test("Messages adds into the end of list",(){
     final grooper = MessagesGrouper();
-    ChatMessage controlMessage;
+    ChatMessageData controlMessage;
     grooper.add(createMessageWithUser(1, 1, DateTime.parse("2023-04-16 21:00:00")));
     grooper.add(createMessageWithUser(2, 2, DateTime.parse("2023-04-16 21:00:01")));
     grooper.add(controlMessage = createMessageWithUser(3, 1, DateTime.parse("2023-04-16 21:00:02")));
     expect(grooper.messages.last.id,controlMessage.id,reason: "Последнее сообщение добавилось не в последнюю/новую группу.");
   });
   test("Gropper initialises correctly with prepared messages list.",(){
-    final messages = <ChatMessage,MessagePosition>{//message:{ groupIndex:messagesIndex } предполагаемое положение сообщения в списке групп
-      ChatMessage(0, "0", DateTime.parse("2023-04-16 21:00:00"), 0, MessageStatus.sended, false):const MessagePosition(0,0),
-      ChatMessage(0, "0", DateTime.parse("2023-04-16 22:00:00"), 0, MessageStatus.sended, false):const MessagePosition(2,0),
-      ChatMessage(0, "0", DateTime.parse("2023-04-16 22:01:00"), 0, MessageStatus.sended, false):const MessagePosition(3,0),
-      ChatMessage(0, "0", DateTime.parse("2023-04-16 21:00:01"), 0, MessageStatus.sended, false):const MessagePosition(0,1),
-      ChatMessage(0, "0", DateTime.parse("2023-04-16 21:01:00"), 0, MessageStatus.sended, false):const MessagePosition(1,0),
+    final messages = <ChatMessageData,MessagePosition>{//message:{ groupIndex:messagesIndex } предполагаемое положение сообщения в списке групп
+      ChatMessageData(0, "0", DateTime.parse("2023-04-16 21:00:00"), 0, MessageStatus.sended, false):const MessagePosition(0,0),
+      ChatMessageData(0, "0", DateTime.parse("2023-04-16 22:00:00"), 0, MessageStatus.sended, false):const MessagePosition(2,0),
+      ChatMessageData(0, "0", DateTime.parse("2023-04-16 22:01:00"), 0, MessageStatus.sended, false):const MessagePosition(3,0),
+      ChatMessageData(0, "0", DateTime.parse("2023-04-16 21:00:01"), 0, MessageStatus.sended, false):const MessagePosition(0,1),
+      ChatMessageData(0, "0", DateTime.parse("2023-04-16 21:01:00"), 0, MessageStatus.sended, false):const MessagePosition(1,0),
     };
     final grooper = MessagesGrouper(messages.keys.toList());
     // expect(grooper.messages.last.id,controlMessage.id,reason: "Последнее сообщение добавилось не в последнюю/новую группу.");
@@ -64,8 +64,8 @@ class MessagePosition{
   const MessagePosition(this.group,this.index); 
 }
 createMessageWithTime(int id,DateTime time){
-  return ChatMessage(0, "", time, 1, MessageStatus.sending, false);
+  return ChatMessageData(0, "", time, 1, MessageStatus.sending, false);
 }
 createMessageWithUser(int id, int userId,DateTime time){
-  return ChatMessage(id, "", time, userId, MessageStatus.sending, false);
+  return ChatMessageData(id, "", time, userId, MessageStatus.sending, false);
 }

@@ -1,7 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:matcha/chat/ws_messages/ws_structures.dart';
 import 'package:matcha/chat/ws_messages/ws_message_types.dart';
-import 'package:matcha/models/chat_message/chat_message.dart';
+import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:matcha/structs/json.dart';
 part 'chat_message_punch.g.dart';
@@ -11,6 +11,7 @@ class ChatMessagePunch extends Punch{
   @JsonKey(ignore: true)
   @override final PunchType type = PunchType.chat;
   final int id;
+  final int tempId;
   final int userId;
   final int chatId;
   final int status;
@@ -20,13 +21,13 @@ class ChatMessagePunch extends Punch{
   final int updatedAt;
   @JsonKey(defaultValue: false) final bool changed;
   final String text;
-  ChatMessagePunch._(this.id, this.userId, this.chatId, this.createdAt, this.updatedAt, this.text, this.status, this.changed);
+  ChatMessagePunch._(this.id, this.tempId, this.userId, this.chatId, this.createdAt, this.updatedAt, this.text, this.status, this.changed);
   factory ChatMessagePunch.fromJson(Json json)=>_$ChatMessagePunchFromJson(json);
   @override Json toJson()=>_$ChatMessagePunchToJson(this);
   static _numberFromString(o)=>int.parse(o??0);
 
-  ChatMessage toChatMessage(){
-    return ChatMessage(
+  ChatMessageData toChatMessage(){
+    return ChatMessageData(
       id,
       text,
       DateTime.fromMillisecondsSinceEpoch(updatedAt),
