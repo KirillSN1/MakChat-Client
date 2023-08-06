@@ -30,7 +30,8 @@ class MessagesRepository{
       default:
         throw UnhandledRepositoryError(message);
     }
-    final messagesList = jsonDecode(response.body) as List;
+    final utf8String = utf8.decode(response.bodyBytes);
+    final messagesList = jsonDecode(utf8String) as List;
     return messagesList.map((e) => ChatMessagePunch.fromJson(e).toChatMessage());
   }
 }
