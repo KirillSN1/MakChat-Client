@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:matcha/env.dart';
 import 'package:matcha/models/chat/chat.dart';
 import 'package:matcha/models/chats_search_result/chats_search_result.dart';
-import 'package:matcha/models/user/user.dart';
-import 'package:matcha/services/auth/auth.dart';
 import 'package:matcha/services/repositories/auth/auth_errors.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:http/http.dart' as http ;
