@@ -1,33 +1,28 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 
 class ChatTextField extends StatefulWidget {
   final bool autofocus;
   final bool autoRequestFocus;
   final bool clearAfterSend;
   final bool enabled;
-  final TextEditingController _controller;
-  final FocusNode _focusNode;
+  final TextEditingController? controller;
+  final FocusNode? focusNode;
   
   final void Function(String)? onSend;
   
   
-  ChatTextField({
+  const ChatTextField({
     super.key,
     this.autofocus = true,
     this.autoRequestFocus = true,
     this.clearAfterSend = true,
     this.enabled = true,
-    TextEditingController? controller,
-    FocusNode? focusNode,
+    this.controller,
+    this.focusNode,
     this.onSend
-  }):
-    _controller=controller ?? TextEditingController(),
-    _focusNode=focusNode ?? FocusNode();
+  });
 
   @override
   State<ChatTextField> createState() => _ChatTextFieldState();
@@ -35,10 +30,13 @@ class ChatTextField extends StatefulWidget {
 
 class _ChatTextFieldState extends State<ChatTextField> {
   bool _canSend = false;
+  late final TextEditingController _controller = widget.controller ?? TextEditingController();
+  late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
   
   @override
   void initState() {
     //TODO:message draft
+    RawKeyboard.instance.keysPressed.contains(LogicalKeyboardKey.shift);
     _canSend = false;
     super.initState();
   }
@@ -52,17 +50,18 @@ class _ChatTextFieldState extends State<ChatTextField> {
           Flexible(
             child: TextField(
               enabled: widget.enabled,
-              controller: widget._controller,
-              focusNode: widget._focusNode,
-              autofocus: widget.autofocus,
+              controller: _controller,
+              focusNode: _focusNode,
+              // autofocus: widget.autofocus,
               onChanged: _onChanged,
               onSubmitted: _onSend,
+              onEditingComplete: (){},
               textInputAction: Platform.isAndroid?TextInputAction.newline:TextInputAction.send,
               maxLines: 5,
               minLines: 1,
               decoration: const InputDecoration(
                 hintText: "Сообщение",
-                border: InputBorder.none
+                border: InputBorder.none,
               ),
             ),
           ),
@@ -94,12 +93,21 @@ class _ChatTextFieldState extends State<ChatTextField> {
   }
 
   void _onSend([String? value]){
-    final text = value ?? widget._controller.text;
+    const shiftSet = [
+      LogicalKeyboardKey.shift,
+      LogicalKeyboardKey.shiftLeft,
+      LogicalKeyboardKey.shiftRight
+    ];
+    final shift = RawKeyboard.instance.keysPressed.any((key) => shiftSet.contains(key));
+    if(shift) return;
+    final text = value ?? _controller.text;
     if(text.trim().isNotEmpty){
       widget.onSend?.call(text.replaceAll(RegExp(r'(^\n)|(\n$)'),""));
     }
-    if(widget.clearAfterSend) widget._controller.text = "";
-    if(widget.autoRequestFocus) widget._focusNode.requestFocus();
+    if(widget.clearAfterSend) {
+      _controller.clear();
+      _onChanged("");
+    }
   }
 
   void _onChanged(String value) {
