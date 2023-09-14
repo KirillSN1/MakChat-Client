@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart';
 import 'package:matcha/chat/ws_chat_client/ws_chat_client.dart';
 import 'package:matcha/env.dart';
 import 'package:matcha/routes/routes.dart';
-import 'package:matcha/services/locator.dart';
 import 'package:matcha/services/auth/auth.dart';
-import 'package:matcha/models/user/user.dart';
 import 'package:matcha/services/repositories/auth/auth_errors.dart';
 import 'package:matcha/services/repositories/auth/auth_info.dart';
 import 'package:matcha/services/repositories/errors.dart';

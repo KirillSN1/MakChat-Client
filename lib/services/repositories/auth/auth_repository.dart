@@ -34,18 +34,15 @@ class AuthRepository{
     on UserNotExistsError {
       return null;
     }
+    catch (e){ rethrow; }
   }
   ///throws IncorrectPasswordOrTokenError, UserNotExistsError, UnhandledRepositoryError
   static Future<AuthInfo> signIn(String login, String password){
     return _signIn(login: login, password: password);
   }
   static Future<AuthInfo> _signIn({String? login, String? password, String? token }) async {
-    final uri = Uri(
-      scheme: Env.scheme, 
-      host: Env.host, 
-      port: Env.port,
-      path: "/Api/signIn",
-      queryParameters: {
+    final uri = BaseUri.getWith(path:"/Api/signIn", 
+      queryParameters:{
         "login":login,
         "password":password,
         "token":token

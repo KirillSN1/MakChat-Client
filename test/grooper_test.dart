@@ -1,11 +1,11 @@
 import 'package:matcha/models/chat_message/chat_message_data.dart';
 import 'package:matcha/models/message_status.dart';
 import 'package:test/test.dart';
-import 'package:matcha/models/messages_grouper.dart';
+import 'package:matcha/models/messages_grouping_model.dart';
 
 void main() {
   test('Group matches message correctly.',(){
-    var grooper = MessagesGrouper();
+    var grooper = MessagesGroupingModel();
     var m = createMessageWithTime(0,DateTime.parse("2023-04-16 22:07:00"));
     var m1 = createMessageWithTime(1,DateTime.parse("2023-04-16 22:07:00"));
     grooper.add(m);
@@ -13,7 +13,7 @@ void main() {
     expect(matches, true);
   });
   test('Messages sorts by different groups.', () {
-    final grooper = MessagesGrouper();
+    final grooper = MessagesGroupingModel();
     final createdMessages = <ChatMessageData>[];
     const groupsCount = 3;
     const messagesInGroupCount = 2;
@@ -32,7 +32,7 @@ void main() {
     }
   });
   test("Messages adds into the end of list",(){
-    final grooper = MessagesGrouper();
+    final grooper = MessagesGroupingModel();
     ChatMessageData controlMessage;
     grooper.add(createMessageWithUser(1, 1, DateTime.parse("2023-04-16 21:00:00")));
     grooper.add(createMessageWithUser(2, 2, DateTime.parse("2023-04-16 21:00:01")));
@@ -47,7 +47,7 @@ void main() {
       ChatMessageData(0, "0", DateTime.parse("2023-04-16 21:00:01"), 0, MessageStatus.sended, false):const MessagePosition(0,1),
       ChatMessageData(0, "0", DateTime.parse("2023-04-16 21:01:00"), 0, MessageStatus.sended, false):const MessagePosition(1,0),
     };
-    final grooper = MessagesGrouper(messages.keys.toList());
+    final grooper = MessagesGroupingModel(messages.keys.toList());
     // expect(grooper.messages.last.id,controlMessage.id,reason: "Последнее сообщение добавилось не в последнюю/новую группу.");
     for(int i = 0; i<messages.length; i++) {
       final message = messages.keys.elementAt(i);

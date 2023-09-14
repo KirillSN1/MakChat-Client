@@ -1,22 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:matcha/models/chat_message/chat_message.dart';
-import 'package:matcha/models/chat_message/chat_message_data.dart';
-import 'message/chat_message_expand_animation.dart';
 import 'message/chat_message_style_enum.dart';
 import 'message/chat_message_view.dart';
 import 'messages_groups_view.dart';
 
+class ChatMessageBuilderData {
+  final ChatMessage message;
+  final bool me;
+  final ChatMessageStyle style;
+  final Widget Function() buildDefault;
+  ChatMessageBuilderData._({
+    required this.message,
+    required this.style,
+    required this.me,
+    required this.buildDefault
+  });
+}
 class DefaultMessagesGroupView extends MessagesGroupView{
   DefaultMessagesGroupView({
     super.key, 
     required int userId,
     required List<ChatMessage> messages,
-    required Map<ChatMessage,AnimationController> messageAnimationControllers
+    Widget Function(ChatMessageBuilderData data, int index)? builder
+    // required Map<ChatMessage,AnimationController> messageAnimationControllers
   }) : super(
     userId: userId, 
     messages: messages,
-    builder: (index) {
-      final message = messages[index];
+    builder: (message,index) {
       final me = userId == message.data.userId;
       var style = ChatMessageStyle.first;
       if(index>0) {
@@ -25,16 +35,31 @@ class DefaultMessagesGroupView extends MessagesGroupView{
       } else if(index==messages.length-1){
         style = ChatMessageStyle.single;
       }
-      return ChatMessageExpandAnimation(
-        controller: messageAnimationControllers[message],
-        alignment: me?Alignment.centerRight:Alignment.centerLeft,
-        child: ChatMessageView(
-          userId: userId,
+      buildMessageView(){
+        return ChatMessageView(
+          me: me,
           message: message,
           style: style,
-        ),
+        );
+      }
+      return Align(
+        alignment: me?Alignment.centerRight:Alignment.centerLeft,
+        child: builder?.call(ChatMessageBuilderData._(
+          message:message,
+          style:style,
+          me:me,
+          buildDefault: buildMessageView
+        ), index) ?? buildMessageView()
       );
+      // return ChatMessageExpandAnimation(
+      //   controller: messageAnimationControllers[message],
+      //   alignment: me?Alignment.centerRight:Alignment.centerLeft,
+      //   child: ChatMessageView(
+      //     userId: userId,
+      //     message: message,
+      //     style: style,
+      //   ),
+      // );
     },
   );
-
 }

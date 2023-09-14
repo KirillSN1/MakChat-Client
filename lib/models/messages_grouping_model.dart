@@ -1,7 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:matcha/low/date_time_ext.dart';
 import 'chat_message/chat_message.dart';
 
-class MessagesGrouper{
+class MessagesGroupingModel extends ChangeNotifier{
   final List<MessagesGroup> _groups = [];
   List<MessagesGroup>  get groups=>_groups;
   List<ChatMessage> get messages {
@@ -14,17 +15,22 @@ class MessagesGrouper{
     for (var group in _groups) { count += group.messages.length; }
     return count;
   }
-  MessagesGrouper([Iterable<ChatMessage>? messages]){
+  MessagesGroupingModel([Iterable<ChatMessage>? messages]){
     addAll(messages);
   }
   void addAll([Iterable<ChatMessage>? messages]){
     if(messages != null){
       for(final message in messages) {
-        add(message);
+        _add(message);
       }
     }
+    notifyListeners();
   }
   void add(ChatMessage message){
+    _add(message);
+    notifyListeners();
+  }
+  void _add(ChatMessage message){
     MessagesGroup? availableGroup;
     //сообщения в статусе "отправка", которые нужно опустить вниз
     // List<GrouperMessage> messagesOnSending = [];

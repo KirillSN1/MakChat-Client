@@ -6,7 +6,7 @@ class MessagesGroupView extends StatefulWidget {
   final List<ChatMessage> messages;
   final int userId;
   
-  final Widget Function(int index) builder;
+  final Widget Function(ChatMessage message,int index) builder;
   const MessagesGroupView({super.key, required this.messages, required this.userId, required this.builder});
   @override
   State<MessagesGroupView> createState() => _MessagesGroupViewState();
@@ -27,7 +27,7 @@ class _MessagesGroupViewState extends State<MessagesGroupView> {
             crossAxisAlignment: me?CrossAxisAlignment.end:CrossAxisAlignment.start,
             children: List.generate(
               widget.messages.length,
-              (index)=>widget.builder(index)
+              (index)=>widget.builder(widget.messages[index],index)
             )
           ),
         ),
@@ -35,12 +35,12 @@ class _MessagesGroupViewState extends State<MessagesGroupView> {
     );
   }
   
-  Widget _buildAvatarColumn() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        CircleAvatar(),
-      ],
-    );
-  }
+  // Widget _buildAvatarColumn() {
+  //   return Column(
+  //     mainAxisAlignment: MainAxisAlignment.end,
+  //     children: [
+  //       CircleAvatar(),
+  //     ],
+  //   );
+  // }
 }
